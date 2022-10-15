@@ -96,6 +96,8 @@ namespace WinFormsHalloweenProject
         double lerpPercent = .5;
         Size speeds;
         Size shake;
+
+        Graph graph;
         public Form1()
         {
             InitializeComponent();
@@ -125,6 +127,7 @@ namespace WinFormsHalloweenProject
             Opacity = 50;
             ClientSize = BackgroundImage.Size;
             //ShowInTaskbar = false;
+            graph = new Graph(25, 20, Screen.PrimaryScreen.Bounds);
         }
 
         private void Animation_Tick(object sender, EventArgs e)
@@ -138,10 +141,6 @@ namespace WinFormsHalloweenProject
             lerpPercent += rand.NextError(lerpIncrement);
             lerpPercent = Math.Clamp(lerpPercent, 0, 1);
             Opacity = 1d.Lerp(0, lerpPercent);
-        }
-
-        private void Movement_Tick(object sender, EventArgs e)
-        {
 
 
             IntPtr[] windowHandles = GetAllWindows();
@@ -160,7 +159,7 @@ namespace WinFormsHalloweenProject
                     {
                         isSizeUsed.Add((width, height), false);
                     }
-                    if (!isSizeUsed[(width, height)] && width >= minWindowWidth && height >= minWindowHeight && width <= maxWindowWidth && height <= maxWindowHeight)
+                    if (!isSizeUsed[(width, height)] && width >= minWindowWidth && height >= minWindowHeight && width <= maxWindowWidth && height <= maxWindowHeight && temp.Left < Screen.PrimaryScreen.Bounds.Right && temp.Top < Screen.PrimaryScreen.Bounds.Bottom && temp.Right > Screen.PrimaryScreen.Bounds.Left && temp.Bottom > Screen.PrimaryScreen.Bounds.Top)
                     {
                         isSizeUsed[(width, height)] = true;
                         currentWindows.Add(temp);
@@ -168,17 +167,29 @@ namespace WinFormsHalloweenProject
                 }
 
             }
-            currentWindows.Remove(TrueBounds.ToRECT());
 
-            IntPtr windowHandle = GetForegroundWindow();
-            RECT currentWindow;
-            bool result = GetWindowRect(new HandleRef(this, windowHandle), out currentWindow);
+            //Add rectangle tracking to reduce the amount we need to clean up each time
+            currentWindows.Remove(Bounds.ToRECT());
+            foreach (RECT rect in currentWindows)
+            {
+                graph.SetWallState(rect.ToRectangle(), true);
+            }
+        }
+
+        private void Movement_Tick(object sender, EventArgs e)
+        {
+
+
+            //IntPtr windowHandle = GetForegroundWindow();
+            //RECT currentWindow;
+            //bool result = GetWindowRect(new HandleRef(this, windowHandle), out currentWindow);
             //currentWindow = (new Rectangle(0, 0, 0, 0)).ToRECT();
 
             Bounds = Move();
             Point newPosition;
-            Point newBounds = Declamp(TrueBounds.Location, currentWindow.Left - TrueBounds.Width, currentWindow.Right, currentWindow.Top - TrueBounds.Height, currentWindow.Bottom);
+            //Point newBounds = Declamp(TrueBounds.Location, currentWindow.Left - TrueBounds.Width, currentWindow.Right, currentWindow.Top - TrueBounds.Height, currentWindow.Bottom);
             //Point newBounds = new Point(TrueBounds.X, TrueBounds.Y);
+            Point newBounds = graph.Dijkstra(new Point(TrueBounds.X, TrueBounds.Y));
             newPosition = new Point(TrueBounds.X.Lerp(newBounds.X, 50), TrueBounds.Y.Lerp(newBounds.Y, 50));
             var oldNewPosition = newPosition;
             newPosition = new Point(Math.Clamp(newPosition.X, Screen.PrimaryScreen.Bounds.Left, Screen.PrimaryScreen.Bounds.Right - TrueBounds.Width), Math.Clamp(newPosition.Y, Screen.PrimaryScreen.Bounds.Top, Screen.PrimaryScreen.Bounds.Bottom - TrueBounds.Height));
@@ -263,6 +274,10 @@ namespace WinFormsHalloweenProject
             return returnRect;
         }
 
+        public static Rectangle ToRectangle(this RECT rect)
+        {
+            return new Rectangle(new Point(rect.Left, rect.Top), new Size(rect.Right - rect.Left, rect.Bottom - rect.Top));
+        }
         /// <summary>
         /// 
         /// </summary>
