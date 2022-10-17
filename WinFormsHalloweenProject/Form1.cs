@@ -67,6 +67,10 @@ namespace WinFormsHalloweenProject
 
         /// <summary>
         /// ///////////////////////////////////////////NEED TO MAKE A MAP FOR GHOST NAVIGATION!! GOOD lUCK FUTURE SELF
+        /// First identify the open spaces on the graph
+        /// Then decide which space to go to
+        /// A* there with the A* returning a pixel by pixel path including the path width and the ghost calculating how much it can shake each step of the way
+        /// Maybe a rectangle by rectangle path?
         /// </summary>
 
 
@@ -170,10 +174,11 @@ namespace WinFormsHalloweenProject
 
             //Add rectangle tracking to reduce the amount we need to clean up each time
             currentWindows.Remove(Bounds.ToRECT());
-            foreach (RECT rect in currentWindows)
-            {
-                graph.SetWallState(rect.ToRectangle(), true);
-            }
+            graph.ClearWalls();
+            //foreach (RECT rect in currentWindows)
+            //{
+            //    graph.SetWallState(rect.ToRectangle(), true);
+            //}
         }
 
         private void Movement_Tick(object sender, EventArgs e)
