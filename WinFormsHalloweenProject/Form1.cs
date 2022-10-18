@@ -24,6 +24,8 @@ namespace WinFormsHalloweenProject
             public int Top;
             public int Right;
             public int Bottom;
+
+            public static implicit operator Rectangle(RECT rect) => rect.ToRectangle();
         }
 
         [DllImport("user32.dll")]
@@ -94,6 +96,7 @@ namespace WinFormsHalloweenProject
         int maxWindowWidth = Screen.PrimaryScreen.Bounds.Width - 100;
         int maxWindowHeight = Screen.PrimaryScreen.Bounds.Height - 100;
 
+        HashSet<RECT> CurrentWindows = new HashSet<RECT>();
 
         const int degree = 3;
         const double lerpIncrement = .05;
@@ -130,13 +133,13 @@ namespace WinFormsHalloweenProject
 
             Opacity = 50;
             ClientSize = BackgroundImage.Size;
+
             //ShowInTaskbar = false;
-            graph = new Graph(25, 20, Screen.PrimaryScreen.Bounds);
+            graph = new Graph(Screen.PrimaryScreen.Bounds);
         }
 
         private void Animation_Tick(object sender, EventArgs e)
         {
-
 
             BackgroundImage = images[currentIndex];
             currentIndex = (currentIndex + 1) % images.Length;
@@ -148,8 +151,8 @@ namespace WinFormsHalloweenProject
 
 
             IntPtr[] windowHandles = GetAllWindows();
-            List<RECT> currentWindows = new List<RECT>();
-            Dictionary<(int, int), bool> isSizeUsed = new Dictionary<(int, int), bool>();
+            HashSet<RECT> PreviousWindows = CurrentWindows;
+            CurrentWindows.Clear();
             for (int i = 0; i < windowHandles.Length; i++)
             {
                 if (IsWindowVisible(windowHandles[i]))
@@ -159,22 +162,36 @@ namespace WinFormsHalloweenProject
                     int width = temp.Right - temp.Left;
                     int height = temp.Bottom - temp.Top;
 
-                    if (!isSizeUsed.ContainsKey((width, height)))
+
+                    if (width >= minWindowWidth & height >= minWindowHeight & width <= maxWindowWidth & height <= maxWindowHeight & temp.Left < Screen.PrimaryScreen.Bounds.Right & temp.Top < Screen.PrimaryScreen.Bounds.Bottom & temp.Right > Screen.PrimaryScreen.Bounds.Left & temp.Bottom > Screen.PrimaryScreen.Bounds.Top && !CurrentWindows.Contains(temp))
                     {
-                        isSizeUsed.Add((width, height), false);
-                    }
-                    if (!isSizeUsed[(width, height)] && width >= minWindowWidth && height >= minWindowHeight && width <= maxWindowWidth && height <= maxWindowHeight && temp.Left < Screen.PrimaryScreen.Bounds.Right && temp.Top < Screen.PrimaryScreen.Bounds.Bottom && temp.Right > Screen.PrimaryScreen.Bounds.Left && temp.Bottom > Screen.PrimaryScreen.Bounds.Top)
-                    {
-                        isSizeUsed[(width, height)] = true;
-                        currentWindows.Add(temp);
+                        CurrentWindows.Add(temp);
                     }
                 }
-
+            }
+            CurrentWindows.Remove(Bounds.ToRECT());
+            bool diff = false;
+            foreach (RECT rect in CurrentWindows)
+            {
+                if(PreviousWindows.Contains(rect))
+                {
+                    PreviousWindows.Remove(rect);
+                }
+                else
+                {
+                    diff = true;
+                    break;
+                }
+            }
+            if(diff | PreviousWindows.Count > 0)
+            {
+                graph.SetGraph(CurrentWindows);
             }
 
+        
+                
             //Add rectangle tracking to reduce the amount we need to clean up each time
-            currentWindows.Remove(Bounds.ToRECT());
-            graph.ClearWalls();
+            
             //foreach (RECT rect in currentWindows)
             //{
             //    graph.SetWallState(rect.ToRectangle(), true);
