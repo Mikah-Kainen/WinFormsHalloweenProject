@@ -210,8 +210,8 @@ namespace WinFormsHalloweenProject
             Bounds = Move();
             Point newPosition;
             //Point newBounds = Declamp(TrueBounds.Location, currentWindow.Left - TrueBounds.Width, currentWindow.Right, currentWindow.Top - TrueBounds.Height, currentWindow.Bottom);
-            //Point newBounds = new Point(TrueBounds.X, TrueBounds.Y);
-            Point newBounds = graph.Dijkstra(new Point(TrueBounds.X, TrueBounds.Y));
+            Point newBounds = new Point(TrueBounds.X, TrueBounds.Y);
+            //Point newBounds = graph.Dijkstra(new Point(TrueBounds.X, TrueBounds.Y));
             newPosition = new Point(TrueBounds.X.Lerp(newBounds.X, 50), TrueBounds.Y.Lerp(newBounds.Y, 50));
             var oldNewPosition = newPosition;
             newPosition = new Point(Math.Clamp(newPosition.X, Screen.PrimaryScreen.Bounds.Left, Screen.PrimaryScreen.Bounds.Right - TrueBounds.Width), Math.Clamp(newPosition.Y, Screen.PrimaryScreen.Bounds.Top, Screen.PrimaryScreen.Bounds.Bottom - TrueBounds.Height));
