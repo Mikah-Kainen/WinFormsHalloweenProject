@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Reflection.Metadata.Ecma335;
 using System.Security.Cryptography.Xml;
 using System.Text;
@@ -39,6 +40,7 @@ namespace WinFormsHalloweenProject
 
             public Point Location;
             public List<Edge> Edges;
+
             public Node(Point topLeft)
             {
                 AStarQueueIndex = -1;
@@ -61,11 +63,21 @@ namespace WinFormsHalloweenProject
             Screen = screen;
             Nodes = new List<Node>();
 
-            List<Node> path = AStar(null, null, DistanceFunc);
+            //List<Node> path = AStar(null, null, DistanceFunc);
+
+            //TestGraph
+            //Write a public GetNextPosition function that adds start and end to the graph then calls AStar
+            //Hard code start and end and the graph then test if it works
+            //Create a heuristic function to calculate the goal position
+            //Test everything together
+
+            //then add path width detection
         }
 
         public void SetGraph(HashSet<Form1.RECT> rectangles)
         {
+            Nodes = new List<Node>();
+
             Node[] nodes = new Node[4]; //topLeft, topRight, bottomRight, bottomLeft
             foreach (Form1.RECT rect in rectangles)
             {
@@ -76,36 +88,61 @@ namespace WinFormsHalloweenProject
                 foreach (Form1.RECT otherRect in rectangles)
                 {
                     if (rect.Equals(otherRect)) continue;
-                    for (int k = 0; k < nodes.Length; k++)
+                    for (int i = 0; i < nodes.Length; i++)
                     {
-
-                        if (nodes[k] != null && otherRect.ToRectangle().Contains(nodes[k].Location))
+                        if (nodes[i] != null && otherRect.ToRectangle().Contains(nodes[i].Location))
                         {
-                            nodes[k] = null;
+                            nodes[i] = null;
                         }
                     }
                 }
 
-
                 int previousIndex = nodes.Length - 1;
                 bool previousResult = nodes[previousIndex] != null;
-                for (int j = 0; j < nodes.Length; j++)
+                for (int i = 0; i < nodes.Length; i++)
                 {
-                    if (previousResult && nodes[j] != null)
+                    bool doesCurrentNodeExist = false;
+                    if (nodes[i] != null)
                     {
-                        previousResult = true;
-                        AddEdge(nodes[previousIndex], nodes[j]);
+                        Nodes.Add(nodes[i]);
+                        doesCurrentNodeExist = true;
                     }
-                    else
+                    if (previousResult & doesCurrentNodeExist)
                     {
-                        previousResult = false;
+                        foreach(Form1.RECT rectForScale in rectangles)
+                        {
+                            if(rect.Top < rectForScale.Bottom + 1 )
+                            {
+
+                            }
+                        }
+                        AddEdge(nodes[previousIndex], nodes[i]);
                     }
-                    previousIndex = j;
+                    previousResult = doesCurrentNodeExist;
+                    previousIndex = i;
                 }
             }
 
-            ///Make a function that adds the nodes that are in visible range of each other
 
+            for(int currentNodeIndex = 0; currentNodeIndex < Nodes.Count; currentNodeIndex ++)
+            {
+                for(int compareNodeIndex = currentNodeIndex + 1; compareNodeIndex < Nodes.Count; compareNodeIndex ++)
+                {
+                    //bool areNodesConnected = false;
+                    //foreach(Edge edge in Nodes[currentNodeIndex].Edges)
+                    //{
+                    //    if(edge.NodeA == Nodes[compareNodeIndex] | edge.NodeB == Nodes[compareNodeIndex])
+                    //    {
+                    //        areNodesConnected = true;
+                    //        break;
+                    //    }
+                    //}
+                    if (InLineOfSight(Nodes[currentNodeIndex], Nodes[compareNodeIndex], rectangles))
+                    {
+                        AddEdge(Nodes[currentNodeIndex], Nodes[compareNodeIndex]);
+                    }
+                }
+            }
         }
 
         private void AddEdge(double weight, Node nodeA, Node nodeB)
@@ -262,16 +299,14 @@ namespace WinFormsHalloweenProject
         private List<Node> AStar(Node startNode, Node endNode, Func<Point, Point, double> heuristic)
         {
             List<Node> path = new List<Node>();
-            AStarQueue queue = new AStarQueue(endNode.Location, DistanceFunc, Nodes.Count + 2 + nodes.Length);
-
-            ///Use the function that I will make to add startNode and endNode connections to every node in the graph
-
-            for (int i = 0; i < Nodes.Count; i++)
-            {
-                Nodes[i].AStarQueueIndex = -1;
-                Nodes[i].KnownDistance = double.MaxValue;
-                Nodes[i].Founder = null;
-            }
+            AStarQueue queue = new AStarQueue(endNode.Location, DistanceFunc, Nodes.Count);
+            
+            //for (int i = 0; i < Nodes.Count; i++)
+            //{
+            //    Nodes[i].AStarQueueIndex = -1;
+            //    Nodes[i].KnownDistance = double.MaxValue;
+            //    Nodes[i].Founder = null;
+            //}
 
             startNode.KnownDistance = 0;
             Node currentNode = startNode;
@@ -321,14 +356,44 @@ namespace WinFormsHalloweenProject
             return path;
         }
 
-        //public Point Dijkstra(Point start)
-        //{
-        //    return new Point(1000, 1000);
-        //}
+        private bool InLineOfSight(Node nodeA, Node nodeB, HashSet<Form1.RECT> activeRectangles)
+        {
+            Point pointA = nodeA.Location;
+            Point pointB = nodeB.Location;
+            if(pointA == pointB)
+            {
+                return false;
+            }
+
+            double distance = Math.Sqrt((pointB.X - pointA.X) * (pointB.X - pointA.X) + (pointB.Y - pointA.Y) * (pointB.Y - pointA.Y));
+            double percentIncrement = 100 / distance;
+            double currentPercent = percentIncrement;
+            double xValue;
+            double yValue;
+            Point currentPoint;
+
+            while (currentPercent < 100)
+            {
+                xValue = ((double)pointA.X).Lerp(pointB.X, currentPercent);
+                yValue = ((double)pointA.Y).Lerp(pointB.Y, currentPercent);
+
+                currentPercent += percentIncrement;
+
+                currentPoint = new Point((int)xValue, (int)yValue);
+                foreach (Form1.RECT rect in activeRectangles)
+                {
+                    if (rect.Contains(currentPoint))
+                    {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
 
         private double Distance(Node nodeA, Node nodeB) => Math.Sqrt((nodeB.Location.X - nodeA.Location.X) * (nodeB.Location.X - nodeA.Location.X) + (nodeB.Location.Y - nodeA.Location.Y) * (nodeB.Location.Y - nodeA.Location.Y));
 
-
+    
 
         //ASTAR TEST IF FUTURE ME NEEDS
             //Node[] nodes = new Node[100];

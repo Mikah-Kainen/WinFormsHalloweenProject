@@ -25,7 +25,18 @@ namespace WinFormsHalloweenProject
             public int Right;
             public int Bottom;
 
-            public static implicit operator Rectangle(RECT rect) => rect.ToRectangle();
+            public RECT(int left, int top, int right, int bottom)
+            {
+                Left = left;
+                Top = top;
+                Right = right;
+                Bottom = bottom;
+            }
+
+            public bool Contains(Point targetPoint) => Left <= targetPoint.X & Right >= targetPoint.X & Top <= targetPoint.Y & Bottom >= targetPoint.Y;
+
+            public bool Intersects(RECT targetRect) => Contains(new Point(targetRect.Left, targetRect.Top)) & Contains(new Point(targetRect.Right, targetRect.Top)) & Contains(new Point(targetRect.Left, targetRect.Bottom)) & Contains(new Point(targetRect.Right, targetRect.Bottom));
+            //public static implicit operator Rectangle(RECT rect) => rect.ToRectangle();
         }
 
         [DllImport("user32.dll")]
@@ -140,7 +151,6 @@ namespace WinFormsHalloweenProject
 
         private void Animation_Tick(object sender, EventArgs e)
         {
-
             BackgroundImage = images[currentIndex];
             currentIndex = (currentIndex + 1) % images.Length;
 
@@ -185,9 +195,13 @@ namespace WinFormsHalloweenProject
             }
             if(diff | PreviousWindows.Count > 0)
             {
-                graph.SetGraph(CurrentWindows);
+                //graph.SetGraph(CurrentWindows);
             }
 
+            HashSet<RECT> imaginaryWindows = new HashSet<RECT>();
+            imaginaryWindows.Add(new RECT(10, 10, 30, 30));
+            imaginaryWindows.Add(new RECT(20, 20, 40, 40));
+            graph.SetGraph(imaginaryWindows);
         
                 
             //Add rectangle tracking to reduce the amount we need to clean up each time
@@ -284,7 +298,7 @@ namespace WinFormsHalloweenProject
 
         public static double NextError(this Random rand, double degree) => rand.NextDouble() * degree * (rand.Next(0, 2) * 2 - 1);
 
-        public static double Lerp(this double a, double b, double percent) => a * percent + b * (1 - percent);
+        public static double Lerp(this double a, double b, double percent) => b * percent + a * (1 - percent);
 
         public static RECT ToRECT(this Rectangle rect)
         {
