@@ -78,6 +78,14 @@ namespace WinFormsHalloweenProject
         {
             Nodes = new List<Node>();
 
+            Func<Form1.RECT, Form1.RECT, bool>[] CheckIntersections = 
+            {
+                (rect, scaledRect) => rect.Left < scaledRect.Right & rect.Left > scaledRect.Left, //scaledRect blocks the left
+                (rect, scaledRect) => rect.Top < scaledRect.Bottom & rect.Top > scaledRect.Top, //scaledRect blocks the top
+                (rect, scaledRect) => rect.Right > scaledRect.Left & rect.Right < scaledRect.Right, //scaledRect blocks the right
+                (rect, scaledRect) => rect.Bottom > scaledRect.Top & rect.Bottom < scaledRect.Bottom, //scaledRect blocks the bottom
+            };
+
             Node[] nodes = new Node[4]; //topLeft, topRight, bottomRight, bottomLeft
             foreach (Form1.RECT rect in rectangles)
             {
@@ -109,14 +117,20 @@ namespace WinFormsHalloweenProject
                     }
                     if (previousResult & doesCurrentNodeExist)
                     {
+                        bool doesIntersect = false; ;
                         foreach(Form1.RECT rectForScale in rectangles)
                         {
-                            if(rect.Top < rectForScale.Bottom + 1 )
+                            Form1.RECT scaledRect = new Form1.RECT(rectForScale.Left - 1, rectForScale.Top - 1, rectForScale.Right + 1, rectForScale.Top + 1);
+                            doesIntersect = CheckIntersections[i](rect, scaledRect);
+                            if(doesIntersect)
                             {
-
+                                break;
                             }
                         }
-                        AddEdge(nodes[previousIndex], nodes[i]);
+                        if (!doesIntersect)
+                        {
+                            AddEdge(nodes[previousIndex], nodes[i]);
+                        }
                     }
                     previousResult = doesCurrentNodeExist;
                     previousIndex = i;
