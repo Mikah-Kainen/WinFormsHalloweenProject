@@ -120,7 +120,7 @@ namespace WinFormsHalloweenProject
                         bool doesIntersect = false; ;
                         foreach(Form1.RECT rectForScale in rectangles)
                         {
-                            Form1.RECT scaledRect = new Form1.RECT(rectForScale.Left - 1, rectForScale.Top - 1, rectForScale.Right + 1, rectForScale.Top + 1);
+                            Form1.RECT scaledRect = new Form1.RECT(rectForScale.Left - 1, rectForScale.Top - 1, rectForScale.Right + 1, rectForScale.Bottom + 1);
                             doesIntersect = CheckIntersections[i](rect, scaledRect);
                             if(doesIntersect)
                             {
