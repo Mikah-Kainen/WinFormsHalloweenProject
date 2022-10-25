@@ -15,6 +15,7 @@ namespace WinFormsHalloweenProject
     using Tintmap = ValueTuple<Bitmap, Color>;
     using static Particle;
     using static RectangleHueristic;
+    using ParticlePool = ObjectPool<Particle>;
     public partial class Form1 : Form
     {
         [DllImport("user32.dll")]
@@ -152,6 +153,7 @@ namespace WinFormsHalloweenProject
         static readonly Dictionary<Tintmap, Bitmap> particleCache = new Dictionary<Tintmap, Bitmap>();
         private void Form1_Load_1(object sender, EventArgs e)
         {
+            ParticlePool.Instance.Populate(8, () => new Particle());
 
             //Thread.Sleep(5000);
             FormBorderStyle = FormBorderStyle.None;
@@ -206,9 +208,9 @@ namespace WinFormsHalloweenProject
 
 
 
-            Particle particle = new Particle(particleTexture, 500, 500, new Point(Bounds.X + Bounds.Width / 2 - (int)(particleTexture.Width * .05f), Bounds.Bottom - (int)(particleTexture.Height * .1f)), movementVector);
-            //TODO: place ghost above particles
+            Particle particle = ParticlePool.Instance.Borrow<Particle>().SetData(particleTexture, 500, 500, new Point(Bounds.X + Bounds.Width / 2 - (int)(particleTexture.Width * .05f), Bounds.Bottom - (int)(particleTexture.Height * .1f)), movementVector); ;
             
+            //TODO: place ghost above particles            
             //try
             //{
             Application.Run(particle);

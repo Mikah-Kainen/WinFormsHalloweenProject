@@ -8,6 +8,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
+using WinFormsHalloweenProject;
+
 namespace WinformsHalloweenProject
 {
     public partial class Particle : Form
@@ -19,9 +21,15 @@ namespace WinformsHalloweenProject
         Point location;
         int scaleDown;
         Size moveVector;
+        bool init = false;
         //  Bitmap realBackgroundImage;
 #nullable disable
-        public Particle(Bitmap backgroundImage, int lifeTime, int spawnTime, Point location, Size moveVector, float scale = .1f)
+        public Particle()
+        {
+            InitializeComponent();
+        }
+
+        public Particle SetData(Bitmap backgroundImage, int lifeTime, int spawnTime, Point location, Size moveVector, float scale = .1f)
         {
             InitializeComponent();
 
@@ -29,16 +37,18 @@ namespace WinformsHalloweenProject
 
             BackColor = Color.Lime;
             BackgroundImage = (Bitmap)backgroundImage.Clone();
-            this.BackgroundImageLayout = ImageLayout.Zoom;
+            BackgroundImageLayout = ImageLayout.Zoom;
             originalTime = timeLeft = lifeTime;
             originalSpawnTime = spawnTime;
             this.spawnTime = 0;
             Opacity = 0;
-            this.FormBorderStyle = FormBorderStyle.None;
+            FormBorderStyle = FormBorderStyle.None;
             ClientSize = BackgroundImage.Size / scaleDown;
             this.location = location;
             TransparencyKey = BackColor;
             this.moveVector = moveVector;
+            init = true;
+            return this;
         }
 #nullable enable
 
@@ -49,10 +59,15 @@ namespace WinformsHalloweenProject
 
         private void LifeTimer_Tick(object sender, EventArgs e)
         {
+            if (!init) return;
             Location += moveVector;
             ClientSize = BackgroundImage.Size / scaleDown;
             Opacity = spawnTime <= originalSpawnTime? (spawnTime += LifeTimer.Interval) / (double)originalSpawnTime : (timeLeft -= LifeTimer.Interval)/ (double)originalTime;
-            if (timeLeft <= 0) this.Close();
+            if (timeLeft <= 0)
+            {
+                ObjectPool<Particle>.Instance.Return(this);
+                Close();
+            }
         }
     }
 }
