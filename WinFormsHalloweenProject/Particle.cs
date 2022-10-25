@@ -37,9 +37,17 @@ namespace WinformsHalloweenProject
             this.ghost = ghost;
             scaleDown = (int)(1 / scale);
 
-            this.textureKey = textureKey;
+            if (backgroundImage != null)
+            {
+                this.textureKey = textureKey;
+                BackgroundImage = backgroundImage;
+            }
+            else
+            {
+                ;
+            }
+
             BackColor = Color.Lime;
-            BackgroundImage = (Bitmap)backgroundImage.Clone();
             BackgroundImageLayout = ImageLayout.Zoom;
             originalTime = timeLeft = lifeTime;
             originalSpawnTime = spawnTime;
@@ -65,7 +73,12 @@ namespace WinformsHalloweenProject
         private void LifeTimer_Tick(object sender, EventArgs e)
         {
             //if (!init) return;
-          
+            //if (!ghost.SpawnParticles)
+            //{
+            //    Close();
+            //    return;
+            //}
+
             Console.WriteLine(ticks += LifeTimer.Interval);
             Location += moveVector;
             ClientSize = BackgroundImage.Size / scaleDown;

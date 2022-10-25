@@ -127,7 +127,7 @@ namespace WinFormsHalloweenProject
         Size shake;
 
         Graph graph;
-        private bool spawnParticles = true;
+        public bool SpawnParticles = true;
         int spawnDelay = 175;
 #nullable disable
         public Form1()
@@ -162,6 +162,7 @@ namespace WinFormsHalloweenProject
                 ThreadStart legitParticle = new ThreadStart(CreateParticle);
                 Thread thread = new Thread(legitParticle);
                 thread.Start();
+                //CreateParticle();
             }
 
             //Thread.Sleep(5000);
@@ -197,8 +198,8 @@ namespace WinFormsHalloweenProject
             Thread.Sleep(spawnDelay += 175);
             Particle particle = new Particle();
             SetParticle(particle);
+            //particle.Show();
             Application.Run(particle);
-
 
 
 
@@ -222,6 +223,7 @@ namespace WinFormsHalloweenProject
             Color chosenTint = particleKey.Item2;
             if (!particleCache.TryGetValue(particleKey, out var particleTexture))
             {
+                particleCache.Add(particleKey, default);
                 particleTexture.template = (Bitmap)particleKey.Item1.Clone();
                 Graphics gfx = Graphics.FromImage(particleTexture.template);
                 float[][] colorMatrixElements = {
@@ -238,7 +240,8 @@ namespace WinFormsHalloweenProject
                 gfx.DrawImage(particleTexture.template, bounds, bounds.X, bounds.Y, bounds.Width, bounds.Height, GraphicsUnit.Pixel, attributes);
                 particleTexture.maps = new LinkedList<Bitmap>();
                 particleTexture.maps.AddFirst((Bitmap)particleTexture.template.Clone());
-                particleCache.Add(particleKey, particleTexture);
+                particleCache[particleKey] = particleTexture;
+
             }
             else if (particleTexture.maps.Count == 0)
             {
@@ -253,6 +256,7 @@ namespace WinFormsHalloweenProject
 
         private void Animation_Tick(object sender, EventArgs e)
         {
+            // SpawnParticles = false;
             BackgroundImage = images[currentIndex];
             currentIndex = (currentIndex + 1) % images.Length;
 
@@ -397,7 +401,7 @@ namespace WinFormsHalloweenProject
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
-            spawnParticles = false;
+            SpawnParticles = false;
         }
     }
     static class Extensions
