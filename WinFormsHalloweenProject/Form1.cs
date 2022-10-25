@@ -211,7 +211,7 @@ namespace WinFormsHalloweenProject
             
             //try
             //{
-            Application.Run(particle);
+            Application.Run(particle);            
             //application.run dies if not using dog...fun
             //}
             //finally 
