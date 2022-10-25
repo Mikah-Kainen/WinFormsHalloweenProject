@@ -1,5 +1,6 @@
 ﻿namespace WinformsHalloweenProject
 {
+    #nullable disable
     partial class Particle
     {
         /// <summary>

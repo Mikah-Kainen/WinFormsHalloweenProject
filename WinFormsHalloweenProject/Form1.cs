@@ -8,9 +8,12 @@ using Rectangle_Hueristic;
 
 using static WinFormsHalloweenProject.Form1;
 using WinformsHalloweenProject;
+using System.Drawing.Imaging;
 
 namespace WinFormsHalloweenProject
 {
+    using Tintmap = ValueTuple<Bitmap, Color>;
+    using static Particle;
     using static RectangleHueristic;
     public partial class Form1 : Form
     {
@@ -90,10 +93,13 @@ namespace WinFormsHalloweenProject
 
 
 
-        Random rand = new Random();
+        public static Random rand = new Random();
         int currentIndex;
         Bitmap[] images;
 
+
+        Size oldLocation;
+        Size movementVector;
 
 
         const int leftOffset = 10;
@@ -106,8 +112,9 @@ namespace WinFormsHalloweenProject
         const int minWindowWidth = 50;
         const int minWindowHeight = 50;
 
-        int maxWindowWidth = Screen.PrimaryScreen.Bounds.Width - 100;
-        int maxWindowHeight = Screen.PrimaryScreen.Bounds.Height - 100;
+        readonly int maxWindowWidth = Screen.PrimaryScreen.Bounds.Width - 100;
+        readonly int maxWindowHeight = Screen.PrimaryScreen.Bounds.Height - 100;
+
 
         HashSet<RECT> CurrentWindows = new HashSet<RECT>();
 
@@ -118,11 +125,13 @@ namespace WinFormsHalloweenProject
         Size shake;
 
         Graph graph;
+#nullable disable
         public Form1()
         {
             InitializeComponent();
         }
-        readonly Color[] tints =
+#nullable enable
+        static readonly Color[] tints =
         {
             Color.Red,
             Color.OrangeRed,
@@ -133,11 +142,14 @@ namespace WinFormsHalloweenProject
             Color.Purple,
             Color.Blue,
         };
-        readonly Bitmap[] particles =
+        static readonly Bitmap[] particlesTextures =
         {
-            Particle.lep
+            DaPumpkin,
+            LeBat,
+            DaPumpkinALT
         };
-        Dictionary<(Bitmap, Color), Bitmap> tintCache = new Dictionary<(Bitmap, Color), Bitmap>();
+
+        static readonly Dictionary<Tintmap, Bitmap> particleCache = new Dictionary<Tintmap, Bitmap>();
         private void Form1_Load_1(object sender, EventArgs e)
         {
 
@@ -169,12 +181,43 @@ namespace WinFormsHalloweenProject
             graph = new Graph(Screen.PrimaryScreen.Bounds);
         }
 
-        static void CreateParticle()
+        void CreateParticle()
         {
+            Tintmap particleKey = (particlesTextures.RandomValue(), tints.RandomValue());
+            Color chosenTint = particleKey.Item2;
+            if (!particleCache.TryGetValue(particleKey, out var particleTexture))
+            {
+                particleTexture = (Bitmap)particleKey.Item1.Clone();
+                Graphics gfx = Graphics.FromImage(particleTexture);
+                float[][] colorMatrixElements = {
+                new float[] {chosenTint.R / 255f * 2,  0,  0,  0,  0},        // red scaling factor
+                new float[] {0, chosenTint.G / 255f * 2,  0,  0,  0},        // green scaling factor
+                new float[] {0,  0, chosenTint.B / 255f * 2,  0,  0},        // blue scaling factor
+                new float[] {0,  0,  0,  1,  0},
+                new float[] {0,  0,  0,  0,  1}};  
+                //TODO: learn how colormatrixes work -Edden
+                ColorMatrix matrix = new ColorMatrix(colorMatrixElements);
+                ImageAttributes attributes = new ImageAttributes();
+                attributes.SetColorMatrix(matrix, ColorMatrixFlag.Default, ColorAdjustType.Bitmap);
+                var bounds = new Rectangle(Point.Empty, particleTexture.Size);
+                gfx.DrawImage(particleTexture, bounds, bounds.X, bounds.Y, bounds.Width, bounds.Height, GraphicsUnit.Pixel, attributes);
+                particleCache.Add(particleKey, particleTexture);
+            }
 
 
-            Particle particle = new Particle(Dog1, 3000);
+
+            Particle particle = new Particle(particleTexture, 500, 500, new Point(Bounds.X + Bounds.Width / 2 - (int)(particleTexture.Width * .05f), Bounds.Bottom - (int)(particleTexture.Height * .1f)), movementVector);
+            //TODO: place ghost above particles
+            
+            //try
+            //{
             Application.Run(particle);
+            //application.run dies if not using dog...fun
+            //}
+            //finally 
+            //{
+            //    ;
+            //}
         }
 
         private void Animation_Tick(object sender, EventArgs e)
@@ -251,6 +294,7 @@ namespace WinFormsHalloweenProject
             //currentWindow = (new Rectangle(0, 0, 0, 0)).ToRECT();
 
             Bounds = Move();
+            movementVector  = oldLocation - (Size)Location;            
             Point newPosition;
             //Point newBounds = Declamp(TrueBounds.Location, currentWindow.Left - TrueBounds.Width, currentWindow.Right, currentWindow.Top - TrueBounds.Height, currentWindow.Bottom);
             Point newBounds = new Point(TrueBounds.X, TrueBounds.Y);
@@ -272,6 +316,7 @@ namespace WinFormsHalloweenProject
 
         private new Rectangle Move()
         {
+            oldLocation = (Size)Location;
             return new Rectangle((Point)(((Size)TrueBounds.Location) - new Size(leftOffset, topOffset) + shake + speeds), Bounds.Size);
         }
 
@@ -371,5 +416,6 @@ namespace WinFormsHalloweenProject
         /// <param name="percent">0 - 100</param>
         /// <returns></returns>
         public static int Lerp(this int a, int b, int percent) => (a * percent + b * (100 - percent)) / 100;
+        public static T RandomValue<T>(this T[] data) => data[Form1.rand.Next(data.Length)];
     }
 }

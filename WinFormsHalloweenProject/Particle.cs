@@ -12,24 +12,46 @@ namespace WinformsHalloweenProject
 {
     public partial class Particle : Form
     {
+        int spawnTime;
+        int originalSpawnTime;
         int timeLeft;
-        Bitmap realBackgroundImage;
-        public Particle(Bitmap backgroundImage, int lifeTime)
+        int originalTime;
+        Point location;
+        int scaleDown;
+        Size moveVector;
+        //  Bitmap realBackgroundImage;
+#nullable disable
+        public Particle(Bitmap backgroundImage, int lifeTime, int spawnTime, Point location, Size moveVector, float scale = .1f)
         {
             InitializeComponent();
-            BackgroundImage = realBackgroundImage = backgroundImage;
-            timeLeft = lifeTime;
+
+            scaleDown = (int)(1 / scale);
+
+            BackColor = Color.Lime;
+            BackgroundImage = (Bitmap)backgroundImage.Clone();
+            this.BackgroundImageLayout = ImageLayout.Zoom;
+            originalTime = timeLeft = lifeTime;
+            originalSpawnTime = spawnTime;
+            this.spawnTime = 0;
+            Opacity = 0;
+            this.FormBorderStyle = FormBorderStyle.None;
+            ClientSize = BackgroundImage.Size / scaleDown;
+            this.location = location;
+            TransparencyKey = BackColor;
+            this.moveVector = moveVector;
         }
+#nullable enable
 
         private void Particle_Load(object sender, EventArgs e)
         {
-
+            Location = location;
         }
 
         private void LifeTimer_Tick(object sender, EventArgs e)
         {
-            Size = realBackgroundImage.Size;
-            timeLeft -= LifeTimer.Interval;
+            Location += moveVector;
+            ClientSize = BackgroundImage.Size / scaleDown;
+            Opacity = spawnTime <= originalSpawnTime? (spawnTime += LifeTimer.Interval) / (double)originalSpawnTime : (timeLeft -= LifeTimer.Interval)/ (double)originalTime;
             if (timeLeft <= 0) this.Close();
         }
     }
