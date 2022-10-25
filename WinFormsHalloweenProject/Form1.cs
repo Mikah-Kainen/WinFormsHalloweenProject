@@ -4,11 +4,13 @@ using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Rectangle_Hueristic;
 
 using static WinFormsHalloweenProject.Form1;
 
 namespace WinFormsHalloweenProject
 {
+    using static RectangleHueristic;
     public partial class Form1 : Form
     {
         [DllImport("user32.dll")]
@@ -33,9 +35,8 @@ namespace WinFormsHalloweenProject
                 Bottom = bottom;
             }
 
-            public bool Contains(Point targetPoint) => Left <= targetPoint.X & Right >= targetPoint.X & Top <= targetPoint.Y & Bottom >= targetPoint.Y;
+            public bool Contains(Point targetPoint) => Left < targetPoint.X & Right > targetPoint.X & Top < targetPoint.Y & Bottom > targetPoint.Y;
 
-            public bool Intersects(RECT targetRect) => Contains(new Point(targetRect.Left, targetRect.Top)) & Contains(new Point(targetRect.Right, targetRect.Top)) & Contains(new Point(targetRect.Left, targetRect.Bottom)) & Contains(new Point(targetRect.Right, targetRect.Bottom));
             //public static implicit operator Rectangle(RECT rect) => rect.ToRectangle();
         }
 
@@ -201,7 +202,8 @@ namespace WinFormsHalloweenProject
             HashSet<RECT> imaginaryWindows = new HashSet<RECT>();
             imaginaryWindows.Add(new RECT(10, 10, 30, 30));
             imaginaryWindows.Add(new RECT(20, 20, 40, 40));
-            graph.SetGraph(imaginaryWindows);
+            imaginaryWindows.Add(new RECT(50, 950, 100, 1150));
+            Point[] targetPath = graph.GetPath(imaginaryWindows, new Point(10, 1000));
         
                 
             //Add rectangle tracking to reduce the amount we need to clean up each time
@@ -310,9 +312,24 @@ namespace WinFormsHalloweenProject
             return returnRect;
         }
 
+        public static Point GetCenter(this Rectangle targetRectangle)
+        {
+            return new Point(targetRectangle.Left + targetRectangle.Width / 2, targetRectangle.Top + targetRectangle.Height / 2);
+        }
+
         public static Rectangle ToRectangle(this RECT rect)
         {
             return new Rectangle(new Point(rect.Left, rect.Top), new Size(rect.Right - rect.Left, rect.Bottom - rect.Top));
+        }
+
+        public static HashSet<Rectangle> ToRectangles(this HashSet<RECT> rects)
+        {
+            HashSet<Rectangle> returnSet = new HashSet<Rectangle>();
+            foreach(RECT rect in rects)
+            {
+                returnSet.Add(rect.ToRectangle());
+            }
+            return returnSet;
         }
         /// <summary>
         /// 

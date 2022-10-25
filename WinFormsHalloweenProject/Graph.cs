@@ -8,9 +8,10 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
+using Rectangle_Hueristic;
+
 namespace WinFormsHalloweenProject
 {
-
     public class Graph
     {
         public static double DistanceFunc(Point start, Point end)
@@ -74,16 +75,16 @@ namespace WinFormsHalloweenProject
             //then add path width detection
         }
 
-        public void SetGraph(HashSet<Form1.RECT> rectangles)
+        public Point[] GetPath(HashSet<Form1.RECT> rectangles, Point ghostLocation)
         {
             Nodes = new List<Node>();
 
-            Func<Form1.RECT, Form1.RECT, bool>[] CheckIntersections = 
+            Func<Form1.RECT, Form1.RECT, bool>[] CheckIntersections =
             {
-                (rect, scaledRect) => rect.Left < scaledRect.Right & rect.Left > scaledRect.Left, //scaledRect blocks the left
-                (rect, scaledRect) => rect.Top < scaledRect.Bottom & rect.Top > scaledRect.Top, //scaledRect blocks the top
-                (rect, scaledRect) => rect.Right > scaledRect.Left & rect.Right < scaledRect.Right, //scaledRect blocks the right
-                (rect, scaledRect) => rect.Bottom > scaledRect.Top & rect.Bottom < scaledRect.Bottom, //scaledRect blocks the bottom
+                (rect, scaledRect) => rect.Left <= scaledRect.Right & rect.Left >= scaledRect.Left & (rect.Top <= scaledRect.Bottom & rect.Bottom >= scaledRect.Top), //scaledRect blocks the left
+                (rect, scaledRect) => rect.Top <= scaledRect.Bottom & rect.Top >= scaledRect.Top & (rect.Left <= scaledRect.Right & rect.Right >= rect.Left), //scaledRect blocks the top
+                (rect, scaledRect) => rect.Right >= scaledRect.Left & rect.Right <= scaledRect.Right & (rect.Top <= scaledRect.Bottom & rect.Bottom >= scaledRect.Top), //scaledRect blocks the right
+                (rect, scaledRect) => rect.Bottom >= scaledRect.Top & rect.Bottom <= scaledRect.Bottom & (rect.Left <= scaledRect.Right & rect.Right >= rect.Left), //scaledRect blocks the bottom
             };
 
             Node[] nodes = new Node[4]; //topLeft, topRight, bottomRight, bottomLeft
@@ -91,8 +92,8 @@ namespace WinFormsHalloweenProject
             {
                 nodes[0] = new Node(new Point(rect.Left, rect.Top));
                 nodes[1] = new Node(new Point(rect.Right, rect.Top));
-                nodes[3] = new Node(new Point(rect.Right, rect.Bottom));
-                nodes[2] = new Node(new Point(rect.Left, rect.Bottom));
+                nodes[2] = new Node(new Point(rect.Right, rect.Bottom));
+                nodes[3] = new Node(new Point(rect.Left, rect.Bottom));
                 foreach (Form1.RECT otherRect in rectangles)
                 {
                     if (rect.Equals(otherRect)) continue;
@@ -117,12 +118,13 @@ namespace WinFormsHalloweenProject
                     }
                     if (previousResult & doesCurrentNodeExist)
                     {
-                        bool doesIntersect = false; ;
-                        foreach(Form1.RECT rectForScale in rectangles)
+                        bool doesIntersect = false;
+                        foreach (Form1.RECT rectForScale in rectangles)
                         {
+                            if (rect.Equals(rectForScale)) continue;
                             Form1.RECT scaledRect = new Form1.RECT(rectForScale.Left - 1, rectForScale.Top - 1, rectForScale.Right + 1, rectForScale.Bottom + 1);
                             doesIntersect = CheckIntersections[i](rect, scaledRect);
-                            if(doesIntersect)
+                            if (doesIntersect)
                             {
                                 break;
                             }
@@ -137,26 +139,48 @@ namespace WinFormsHalloweenProject
                 }
             }
 
+            Node startNode = new Node(ghostLocation);
+            Nodes.Add(startNode);
 
-            for(int currentNodeIndex = 0; currentNodeIndex < Nodes.Count; currentNodeIndex ++)
+            LinkedList<Rectangle> biggestRectangles = RectangleHueristic.FindBiggestSpace(rectangles.ToRectangles(), Screen.Size);
+            //dont forget that if the ghost is already in the biggest rectangle it needs to bounce around
+            Node endNode = null;
+            if (biggestRectangles.Count > 0)
             {
-                for(int compareNodeIndex = currentNodeIndex + 1; compareNodeIndex < Nodes.Count; compareNodeIndex ++)
+                endNode = new Node(biggestRectangles.First().GetCenter());
+                Nodes.Add(endNode);
+            }
+            else
+            {
+                //set the ghost to bounce around if there are no other rectangles
+            }
+
+            for (int currentNodeIndex = 0; currentNodeIndex < Nodes.Count; currentNodeIndex++)
+            {
+                for (int compareNodeIndex = currentNodeIndex + 1; compareNodeIndex < Nodes.Count; compareNodeIndex++)
                 {
-                    //bool areNodesConnected = false;
-                    //foreach(Edge edge in Nodes[currentNodeIndex].Edges)
-                    //{
-                    //    if(edge.NodeA == Nodes[compareNodeIndex] | edge.NodeB == Nodes[compareNodeIndex])
-                    //    {
-                    //        areNodesConnected = true;
-                    //        break;
-                    //    }
-                    //}
-                    if (InLineOfSight(Nodes[currentNodeIndex], Nodes[compareNodeIndex], rectangles))
+
+                    if (Nodes[currentNodeIndex] == startNode || Nodes[compareNodeIndex] == startNode)
+                    {
+
+                    }
+
+                    if (!AreConnected(Nodes[currentNodeIndex], Nodes[compareNodeIndex]) && InLineOfSight(Nodes[currentNodeIndex], Nodes[compareNodeIndex], rectangles))
                     {
                         AddEdge(Nodes[currentNodeIndex], Nodes[compareNodeIndex]);
                     }
                 }
             }
+
+            List<Node> nodePath = AStar(startNode, endNode, DistanceFunc);
+            Point[] pointPath = new Point[nodePath.Count];
+            int index = 0;
+            foreach (Node node in nodePath)
+            {
+                pointPath[index] = node.Location;
+                index++;
+            }
+            return pointPath;
         }
 
         private void AddEdge(double weight, Node nodeA, Node nodeB)
@@ -167,6 +191,18 @@ namespace WinFormsHalloweenProject
         }
 
         private void AddEdge(Node nodeA, Node nodeB) => AddEdge(Distance(nodeA, nodeB), nodeA, nodeB);
+
+        private bool AreConnected(Node nodeA, Node nodeB)
+        {
+            for (int i = 0; i < nodeA.Edges.Count; i++)
+            {
+                if (nodeA.Edges[i].NodeB == nodeB || nodeA.Edges[i].NodeA == nodeB)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
 
         private void RemoveEdge(Edge targetEdge)
         {
@@ -314,7 +350,7 @@ namespace WinFormsHalloweenProject
         {
             List<Node> path = new List<Node>();
             AStarQueue queue = new AStarQueue(endNode.Location, DistanceFunc, Nodes.Count);
-            
+
             //for (int i = 0; i < Nodes.Count; i++)
             //{
             //    Nodes[i].AStarQueueIndex = -1;
@@ -374,22 +410,22 @@ namespace WinFormsHalloweenProject
         {
             Point pointA = nodeA.Location;
             Point pointB = nodeB.Location;
-            if(pointA == pointB)
+            if (pointA == pointB)
             {
                 return false;
             }
 
             double distance = Math.Sqrt((pointB.X - pointA.X) * (pointB.X - pointA.X) + (pointB.Y - pointA.Y) * (pointB.Y - pointA.Y));
-            double percentIncrement = 100 / distance;
+            double percentIncrement = 1 / distance;
             double currentPercent = percentIncrement;
             double xValue;
             double yValue;
             Point currentPoint;
 
-            while (currentPercent < 100)
+            while (currentPercent < 1)
             {
-                xValue = ((double)pointA.X).Lerp(pointB.X, currentPercent);
-                yValue = ((double)pointA.Y).Lerp(pointB.Y, currentPercent);
+                xValue = ((double)pointA.X).Lerp(pointB.X, currentPercent) + .99999;
+                yValue = ((double)pointA.Y).Lerp(pointB.Y, currentPercent) + .99999;
 
                 currentPercent += percentIncrement;
 
@@ -407,40 +443,40 @@ namespace WinFormsHalloweenProject
 
         private double Distance(Node nodeA, Node nodeB) => Math.Sqrt((nodeB.Location.X - nodeA.Location.X) * (nodeB.Location.X - nodeA.Location.X) + (nodeB.Location.Y - nodeA.Location.Y) * (nodeB.Location.Y - nodeA.Location.Y));
 
-    
+
 
         //ASTAR TEST IF FUTURE ME NEEDS
-            //Node[] nodes = new Node[100];
-            //nodes[0] = new Node(new Point(0, 0));
-            //for (int y = 1; y< 10; y++)
-            //{
-            //    nodes[y * 10] = new Node(new Point(0, y));
-            //    AddEdge(1, nodes[(y - 1) * 10], nodes[y * 10]);
-            //}
-            //for (int x = 1; x< 10; x++)
-            //{
-            //    nodes[x] = new Node(new Point(x, 0));
-            //    AddEdge(1, nodes[x - 1], nodes[x]);
-            //}
-            //for (int y = 1; y < 10; y++)
-            //{
-            //    for (int x = 1; x < 10; x++)
-            //    {
-            //        nodes[y * 10 + x] = new Node(new Point(x, y));
-            //        AddEdge(1, nodes[(y - 1) * 10 + x - 1], nodes[y * 10 + x]);
-            //        AddEdge(1, nodes[(y - 1) * 10 + x], nodes[y * 10 + x]);
-            //        AddEdge(1, nodes[y * 10 + x - 1], nodes[y * 10 + x]);
-            //    }
-            //}
-            //for (int i = 0; i < nodes[11].Edges.Count; i++)
-            //{
-            //    RemoveEdge(nodes[11].Edges[i]);
-            //}
-            //for (int i = 0; i < nodes[22].Edges.Count; i++)
-            //{
-            //    RemoveEdge(nodes[22].Edges[i]);
-            //}
-            //startNode = nodes[0];
-            //endNode = nodes[99];
+        //Node[] nodes = new Node[100];
+        //nodes[0] = new Node(new Point(0, 0));
+        //for (int y = 1; y< 10; y++)
+        //{
+        //    nodes[y * 10] = new Node(new Point(0, y));
+        //    AddEdge(1, nodes[(y - 1) * 10], nodes[y * 10]);
+        //}
+        //for (int x = 1; x< 10; x++)
+        //{
+        //    nodes[x] = new Node(new Point(x, 0));
+        //    AddEdge(1, nodes[x - 1], nodes[x]);
+        //}
+        //for (int y = 1; y < 10; y++)
+        //{
+        //    for (int x = 1; x < 10; x++)
+        //    {
+        //        nodes[y * 10 + x] = new Node(new Point(x, y));
+        //        AddEdge(1, nodes[(y - 1) * 10 + x - 1], nodes[y * 10 + x]);
+        //        AddEdge(1, nodes[(y - 1) * 10 + x], nodes[y * 10 + x]);
+        //        AddEdge(1, nodes[y * 10 + x - 1], nodes[y * 10 + x]);
+        //    }
+        //}
+        //for (int i = 0; i < nodes[11].Edges.Count; i++)
+        //{
+        //    RemoveEdge(nodes[11].Edges[i]);
+        //}
+        //for (int i = 0; i < nodes[22].Edges.Count; i++)
+        //{
+        //    RemoveEdge(nodes[22].Edges[i]);
+        //}
+        //startNode = nodes[0];
+        //endNode = nodes[99];
     }
 }
