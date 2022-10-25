@@ -21,7 +21,10 @@ namespace WinformsHalloweenProject
         Point location;
         int scaleDown;
         Size moveVector;
-        bool init = false;
+       // bool init = false;
+        Form1 ghost;
+        int ticks;
+        (Bitmap, Color) textureKey;
         //  Bitmap realBackgroundImage;
 #nullable disable
         public Particle()
@@ -29,12 +32,12 @@ namespace WinformsHalloweenProject
             InitializeComponent();
         }
 
-        public Particle SetData(Bitmap backgroundImage, int lifeTime, int spawnTime, Point location, Size moveVector, float scale = .1f)
+        public Particle SetData((Bitmap, Color) textureKey, Bitmap backgroundImage, Form1 ghost, int lifeTime, int spawnTime, Point location, Size moveVector, float scale = .1f)
         {
-            InitializeComponent();
-
+            this.ghost = ghost;
             scaleDown = (int)(1 / scale);
 
+            this.textureKey = textureKey;
             BackColor = Color.Lime;
             BackgroundImage = (Bitmap)backgroundImage.Clone();
             BackgroundImageLayout = ImageLayout.Zoom;
@@ -44,10 +47,11 @@ namespace WinformsHalloweenProject
             Opacity = 0;
             FormBorderStyle = FormBorderStyle.None;
             ClientSize = BackgroundImage.Size / scaleDown;
-            this.location = location;
+            Location = this.location = location;
             TransparencyKey = BackColor;
             this.moveVector = moveVector;
-            init = true;
+           // init = true;
+            
             return this;
         }
 #nullable enable
@@ -55,19 +59,26 @@ namespace WinformsHalloweenProject
         private void Particle_Load(object sender, EventArgs e)
         {
             Location = location;
+            LifeTimer.Interval = 17;
         }
 
         private void LifeTimer_Tick(object sender, EventArgs e)
         {
-            if (!init) return;
+            //if (!init) return;
+          
+            Console.WriteLine(ticks += LifeTimer.Interval);
             Location += moveVector;
             ClientSize = BackgroundImage.Size / scaleDown;
             Opacity = spawnTime <= originalSpawnTime? (spawnTime += LifeTimer.Interval) / (double)originalSpawnTime : (timeLeft -= LifeTimer.Interval)/ (double)originalTime;
             if (timeLeft <= 0)
             {
-                ObjectPool<Particle>.Instance.Return(this);
-                Close();
+                //     ObjectPool<Particle>.Instance.Return(this);
+                ghost.particleCache[textureKey].maps.AddLast((Bitmap)BackgroundImage);
+                ghost.SetParticle(this);
+                Thread.Sleep(175);
+                Console.WriteLine();  
             }
+           // LifeTimer.Interval = 100;
         }
     }
 }

@@ -36,7 +36,7 @@
             // LifeTimer
             // 
             this.LifeTimer.Enabled = true;
-            this.LifeTimer.Interval = 17;
+           // this.LifeTimer.Interval = 17;
             this.LifeTimer.Tick += new System.EventHandler(this.LifeTimer_Tick);
             // 
             // Particle

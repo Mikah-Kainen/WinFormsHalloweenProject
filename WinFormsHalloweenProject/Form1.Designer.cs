@@ -39,7 +39,6 @@ namespace WinFormsHalloweenProject {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.Animation = new System.Windows.Forms.Timer(this.components);
             this.Movement = new System.Windows.Forms.Timer(this.components);
-            this.ParticleSpawner = new System.Windows.Forms.Timer(this.components);
             this.SuspendLayout();
             // 
             // Animation
@@ -53,12 +52,6 @@ namespace WinFormsHalloweenProject {
             this.Movement.Interval = 17;
             this.Movement.Tick += new System.EventHandler(this.Movement_Tick);
             // 
-            // ParticleSpawner
-            // 
-            this.ParticleSpawner.Enabled = true;
-            this.ParticleSpawner.Interval = 175;
-            this.ParticleSpawner.Tick += new System.EventHandler(this.timer1_Tick);
-            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
@@ -70,6 +63,7 @@ namespace WinFormsHalloweenProject {
             this.DoubleBuffered = true;
             this.Name = "Form1";
             this.Text = "Form1";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
             this.Load += new System.EventHandler(this.Form1_Load_1);
             this.ResumeLayout(false);
 
@@ -77,7 +71,6 @@ namespace WinFormsHalloweenProject {
 
         private System.Windows.Forms.Timer Animation;
         private System.Windows.Forms.Timer Movement;
-        private System.Windows.Forms.Timer ParticleSpawner;
 
         /// <summary>
         ///   Returns the cached ResourceManager instance used by this class.

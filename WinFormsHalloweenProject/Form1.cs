@@ -9,13 +9,14 @@ using Rectangle_Hueristic;
 using static WinFormsHalloweenProject.Form1;
 using WinformsHalloweenProject;
 using System.Drawing.Imaging;
+using System.Security.Cryptography.X509Certificates;
 
 namespace WinFormsHalloweenProject
 {
     using Tintmap = ValueTuple<Bitmap, Color>;
     using static Particle;
     using static RectangleHueristic;
-    using ParticlePool = ObjectPool<Particle>;
+    // using ParticlePool = ObjectPool<Particle>;
     public partial class Form1 : Form
     {
         [DllImport("user32.dll")]
@@ -100,7 +101,7 @@ namespace WinFormsHalloweenProject
 
 
         Size oldLocation;
-        Size movementVector;
+        public Size MovementVector;
 
 
         const int leftOffset = 10;
@@ -126,6 +127,8 @@ namespace WinFormsHalloweenProject
         Size shake;
 
         Graph graph;
+        private bool spawnParticles = true;
+        int spawnDelay = 175;
 #nullable disable
         public Form1()
         {
@@ -150,10 +153,16 @@ namespace WinFormsHalloweenProject
             DaPumpkinALT
         };
 
-        static readonly Dictionary<Tintmap, Bitmap> particleCache = new Dictionary<Tintmap, Bitmap>();
+        public readonly Dictionary<Tintmap, (Bitmap template, LinkedList<Bitmap> maps)> particleCache = new Dictionary<Tintmap, (Bitmap, LinkedList<Bitmap>)>();
         private void Form1_Load_1(object sender, EventArgs e)
         {
-            ParticlePool.Instance.Populate(8, () => new Particle());
+            //ParticlePool.Instance.Populate(8, () => new Particle());
+            for (int i = 0; i++ < 8;)
+            {
+                ThreadStart legitParticle = new ThreadStart(CreateParticle);
+                Thread thread = new Thread(legitParticle);
+                thread.Start();
+            }
 
             //Thread.Sleep(5000);
             FormBorderStyle = FormBorderStyle.None;
@@ -185,35 +194,20 @@ namespace WinFormsHalloweenProject
 
         void CreateParticle()
         {
-            Tintmap particleKey = (particlesTextures.RandomValue(), tints.RandomValue());
-            Color chosenTint = particleKey.Item2;
-            if (!particleCache.TryGetValue(particleKey, out var particleTexture))
-            {
-                particleTexture = (Bitmap)particleKey.Item1.Clone();
-                Graphics gfx = Graphics.FromImage(particleTexture);
-                float[][] colorMatrixElements = {
-                new float[] {chosenTint.R / 255f * 2,  0,  0,  0,  0},        // red scaling factor
-                new float[] {0, chosenTint.G / 255f * 2,  0,  0,  0},        // green scaling factor
-                new float[] {0,  0, chosenTint.B / 255f * 2,  0,  0},        // blue scaling factor
-                new float[] {0,  0,  0,  1,  0},
-                new float[] {0,  0,  0,  0,  1}};  
-                //TODO: learn how colormatrixes work -Edden
-                ColorMatrix matrix = new ColorMatrix(colorMatrixElements);
-                ImageAttributes attributes = new ImageAttributes();
-                attributes.SetColorMatrix(matrix, ColorMatrixFlag.Default, ColorAdjustType.Bitmap);
-                var bounds = new Rectangle(Point.Empty, particleTexture.Size);
-                gfx.DrawImage(particleTexture, bounds, bounds.X, bounds.Y, bounds.Width, bounds.Height, GraphicsUnit.Pixel, attributes);
-                particleCache.Add(particleKey, particleTexture);
-            }
+            Thread.Sleep(spawnDelay += 175);
+            Particle particle = new Particle();
+            SetParticle(particle);
+            Application.Run(particle);
 
 
 
-            Particle particle = ParticlePool.Instance.Borrow<Particle>().SetData(particleTexture, 500, 500, new Point(Bounds.X + Bounds.Width / 2 - (int)(particleTexture.Width * .05f), Bounds.Bottom - (int)(particleTexture.Height * .1f)), movementVector); ;
-            
+
+            //ParticlePool.Instance.Borrow<Particle>(). ;
+
             //TODO: place ghost above particles            
             //try
             //{
-            Application.Run(particle);
+
             //application.run dies if not using dog...fun
             //}
             //finally 
@@ -221,6 +215,41 @@ namespace WinFormsHalloweenProject
             //    ;
             //}
         }
+
+        public void SetParticle(Particle particle)
+        {
+            Tintmap particleKey = (particlesTextures.RandomValue(), tints.RandomValue());
+            Color chosenTint = particleKey.Item2;
+            if (!particleCache.TryGetValue(particleKey, out var particleTexture))
+            {
+                particleTexture.template = (Bitmap)particleKey.Item1.Clone();
+                Graphics gfx = Graphics.FromImage(particleTexture.template);
+                float[][] colorMatrixElements = {
+                    new float[] {chosenTint.R / 255f * 2,  0,  0,  0,  0},        // red scaling factor
+                    new float[] {0, chosenTint.G / 255f * 2,  0,  0,  0},        // green scaling factor
+                    new float[] {0,  0, chosenTint.B / 255f * 2,  0,  0},        // blue scaling factor
+                    new float[] {0,  0,  0,  1,  0},
+                    new float[] {0,  0,  0,  0,  1}};
+                //TODO: learn how colormatrixes work -Edden
+                ColorMatrix matrix = new ColorMatrix(colorMatrixElements);
+                ImageAttributes attributes = new ImageAttributes();
+                attributes.SetColorMatrix(matrix, ColorMatrixFlag.Default, ColorAdjustType.Bitmap);
+                var bounds = new Rectangle(Point.Empty, particleTexture.template.Size);
+                gfx.DrawImage(particleTexture.template, bounds, bounds.X, bounds.Y, bounds.Width, bounds.Height, GraphicsUnit.Pixel, attributes);
+                particleTexture.maps = new LinkedList<Bitmap>();
+                particleTexture.maps.AddFirst((Bitmap)particleTexture.template.Clone());
+                particleCache.Add(particleKey, particleTexture);
+            }
+            else if (particleTexture.maps.Count == 0)
+            {
+                particleTexture.maps.AddFirst((Bitmap)particleTexture.template.Clone());
+            }
+            var chosenTexture = particleTexture.maps.First.Value;
+            particleTexture.maps.RemoveFirst();
+
+            particle.SetData(particleKey, chosenTexture, this, 500, 500, new Point(Bounds.X + Bounds.Width / 2 - (int)(chosenTexture.Width * .05f), Bounds.Bottom - (int)(chosenTexture.Height * .1f)), MovementVector);
+        }
+
 
         private void Animation_Tick(object sender, EventArgs e)
         {
@@ -296,7 +325,7 @@ namespace WinFormsHalloweenProject
             //currentWindow = (new Rectangle(0, 0, 0, 0)).ToRECT();
 
             Bounds = Move();
-            movementVector  = oldLocation - (Size)Location;            
+            MovementVector = oldLocation - (Size)Location;
             Point newPosition;
             //Point newBounds = Declamp(TrueBounds.Location, currentWindow.Left - TrueBounds.Width, currentWindow.Right, currentWindow.Top - TrueBounds.Height, currentWindow.Bottom);
             Point newBounds = new Point(TrueBounds.X, TrueBounds.Y);
@@ -366,11 +395,9 @@ namespace WinFormsHalloweenProject
             return returnVal;
         }
 
-        private void timer1_Tick(object sender, EventArgs e)
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
-            ThreadStart legitParticle = new ThreadStart(CreateParticle);
-            Thread thread = new Thread(legitParticle);
-            thread.Start();
+            spawnParticles = false;
         }
     }
     static class Extensions
