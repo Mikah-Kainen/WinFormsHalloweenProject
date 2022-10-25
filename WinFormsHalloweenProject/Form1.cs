@@ -180,7 +180,7 @@ namespace WinFormsHalloweenProject
             //ShowInTaskbar = false;
             graph = new Graph(Screen.PrimaryScreen.Bounds);
         }
-
+        
         void CreateParticle()
         {
             Tintmap particleKey = (particlesTextures.RandomValue(), tints.RandomValue());
