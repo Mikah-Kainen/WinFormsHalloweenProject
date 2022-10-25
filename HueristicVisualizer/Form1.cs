@@ -40,7 +40,7 @@ namespace Rectangle_Hueristic
             if (e.KeyData == Keys.Enter)
             {
 
-                this.SelectNextControl(box, true, false, true, false);
+                SelectNextControl(box, true, false, true, false);
                 return;
 
             }

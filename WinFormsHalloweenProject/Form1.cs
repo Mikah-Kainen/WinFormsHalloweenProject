@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using Rectangle_Hueristic;
 
 using static WinFormsHalloweenProject.Form1;
+using WinformsHalloweenProject;
 
 namespace WinFormsHalloweenProject
 {
@@ -121,8 +122,26 @@ namespace WinFormsHalloweenProject
         {
             InitializeComponent();
         }
+        readonly Color[] tints =
+        {
+            Color.Red,
+            Color.OrangeRed,
+            Color.Yellow,
+            Color.Green,
+            Color.Orange,
+            Color.Black,
+            Color.Purple,
+            Color.Blue,
+        };
+        readonly Bitmap[] particles =
+        {
+
+        };
+        Dictionary<(Bitmap, Color), Bitmap> tintCache = new Dictionary<(Bitmap, Color), Bitmap>();
         private void Form1_Load_1(object sender, EventArgs e)
         {
+
+            //Thread.Sleep(5000);
             FormBorderStyle = FormBorderStyle.None;
             BackColor = Color.LawnGreen;
             TransparencyKey = BackColor;
@@ -150,6 +169,14 @@ namespace WinFormsHalloweenProject
             graph = new Graph(Screen.PrimaryScreen.Bounds);
         }
 
+        static void CreateParticle()
+        {
+
+
+            Particle particle = new Particle(Dog1, 3000);
+            Application.Run(particle);
+        }
+
         private void Animation_Tick(object sender, EventArgs e)
         {
             BackgroundImage = images[currentIndex];
@@ -163,7 +190,7 @@ namespace WinFormsHalloweenProject
 
             IntPtr[] windowHandles = GetAllWindows();
             HashSet<RECT> PreviousWindows = CurrentWindows;
-            CurrentWindows.Clear();
+            CurrentWindows = new HashSet<RECT>();
             for (int i = 0; i < windowHandles.Length; i++)
             {
                 if (IsWindowVisible(windowHandles[i]))
@@ -184,7 +211,7 @@ namespace WinFormsHalloweenProject
             bool diff = false;
             foreach (RECT rect in CurrentWindows)
             {
-                if(PreviousWindows.Contains(rect))
+                if (PreviousWindows.Contains(rect))
                 {
                     PreviousWindows.Remove(rect);
                 }
@@ -194,7 +221,7 @@ namespace WinFormsHalloweenProject
                     break;
                 }
             }
-            if(diff | PreviousWindows.Count > 0)
+            if (diff | PreviousWindows.Count > 0)
             {
                 //graph.SetGraph(CurrentWindows);
             }
@@ -204,10 +231,10 @@ namespace WinFormsHalloweenProject
             imaginaryWindows.Add(new RECT(20, 20, 40, 40));
             imaginaryWindows.Add(new RECT(50, 950, 100, 1150));
             Point[] targetPath = graph.GetPath(imaginaryWindows, new Point(10, 1000));
-        
-                
+
+
             //Add rectangle tracking to reduce the amount we need to clean up each time
-            
+
             //foreach (RECT rect in currentWindows)
             //{
             //    graph.SetWallState(rect.ToRectangle(), true);
@@ -243,7 +270,7 @@ namespace WinFormsHalloweenProject
             Bounds = new Rectangle((Point)((Size)newPosition - new Size(leftOffset, topOffset)), Bounds.Size);
         }
 
-        private Rectangle Move()
+        private new Rectangle Move()
         {
             return new Rectangle((Point)(((Size)TrueBounds.Location) - new Size(leftOffset, topOffset) + shake + speeds), Bounds.Size);
         }
@@ -292,7 +319,12 @@ namespace WinFormsHalloweenProject
             return returnVal;
         }
 
-
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            ThreadStart legitParticle = new ThreadStart(CreateParticle);
+            Thread thread = new Thread(legitParticle);
+            thread.Start();
+        }
     }
     static class Extensions
     {
@@ -307,7 +339,7 @@ namespace WinFormsHalloweenProject
             RECT returnRect = new RECT();
             returnRect.Left = rect.Left;
             returnRect.Top = rect.Top; ;
-            returnRect.Right = rect.Right; 
+            returnRect.Right = rect.Right;
             returnRect.Bottom = rect.Bottom;
             return returnRect;
         }
@@ -325,7 +357,7 @@ namespace WinFormsHalloweenProject
         public static HashSet<Rectangle> ToRectangles(this HashSet<RECT> rects)
         {
             HashSet<Rectangle> returnSet = new HashSet<Rectangle>();
-            foreach(RECT rect in rects)
+            foreach (RECT rect in rects)
             {
                 returnSet.Add(rect.ToRectangle());
             }
