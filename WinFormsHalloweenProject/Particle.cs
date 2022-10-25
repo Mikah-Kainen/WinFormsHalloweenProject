@@ -12,14 +12,13 @@ namespace WinformsHalloweenProject
 {
     public partial class Particle : Form
     {
-        Color tint;
         int timeLeft;
-        public Particle(Image backgroundImage, int lifeTime)
-        {            
+        Bitmap realBackgroundImage;
+        public Particle(Bitmap backgroundImage, int lifeTime)
+        {
             InitializeComponent();
-            BackgroundImage = backgroundImage;
-            timeLeft = lifeTime;        
-
+            BackgroundImage = realBackgroundImage = backgroundImage;
+            timeLeft = lifeTime;
         }
 
         private void Particle_Load(object sender, EventArgs e)
@@ -29,6 +28,7 @@ namespace WinformsHalloweenProject
 
         private void LifeTimer_Tick(object sender, EventArgs e)
         {
+            Size = realBackgroundImage.Size;
             timeLeft -= LifeTimer.Interval;
             if (timeLeft <= 0) this.Close();
         }
