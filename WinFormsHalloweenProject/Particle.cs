@@ -73,11 +73,11 @@ namespace WinformsHalloweenProject
         private void LifeTimer_Tick(object sender, EventArgs e)
         {
             //if (!init) return;
-            //if (!ghost.SpawnParticles)
-            //{
-            //    Close();
-            //    return;
-            //}
+            if (!ghost.SpawnParticles)
+            {
+                Close();
+                return;
+            }
 
             Console.WriteLine(ticks += LifeTimer.Interval);
             Location += moveVector;
