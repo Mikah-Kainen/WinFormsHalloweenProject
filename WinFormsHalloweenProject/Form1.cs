@@ -96,6 +96,8 @@ namespace WinFormsHalloweenProject
 
 
         public static Random rand = new Random();
+        static Point startingPoint = new Point(10, 10);
+        static Size startingSize = new Size(800, 450);
         int currentIndex;
         Bitmap[] images;
 
@@ -118,7 +120,8 @@ namespace WinFormsHalloweenProject
         readonly int maxWindowHeight = Screen.PrimaryScreen.Bounds.Height - 100;
 
 
-        HashSet<RECT> CurrentWindows = new HashSet<RECT>();
+        public HashSet<RECT> CurrentWindows = new HashSet<RECT>();
+        public Point[] CurrentPath = { startingPoint, startingPoint, startingPoint};
 
         const int degree = 3;
         const double lerpIncrement = .05;
@@ -128,7 +131,10 @@ namespace WinFormsHalloweenProject
 
         Graph graph;
         public bool SpawnParticles = true;
-        int spawnDelay = 175;
+        const int particleCount = 8;
+        int spawnDelay = 0;
+        public Particle[] Particles = new Particle[particleCount];
+
 #nullable disable
         public Form1()
         {
@@ -157,7 +163,7 @@ namespace WinFormsHalloweenProject
         private void Form1_Load_1(object sender, EventArgs e)
         {
             //ParticlePool.Instance.Populate(8, () => new Particle());
-            for (int i = 0; i++ < 8;)
+            for (int i = 0; i++ < particleCount;)
             {
                 ThreadStart legitParticle = new ThreadStart(CreateParticle);
                 Thread thread = new Thread(legitParticle);
@@ -183,6 +189,7 @@ namespace WinFormsHalloweenProject
                   Dog10,
             };
 
+            Bounds = new Rectangle(startingPoint, startingSize);
             speeds = new Size(2, 2);
 
 
@@ -196,8 +203,11 @@ namespace WinFormsHalloweenProject
         void CreateParticle()
         {
             Thread.Sleep(spawnDelay += 175);
+            int currentIndex = spawnDelay / 175 - 1;
             Particle particle = new Particle();
+            Particles[currentIndex] = particle;
             SetParticle(particle);
+
             //particle.Show();
             Application.Run(particle);
 
@@ -223,8 +233,18 @@ namespace WinFormsHalloweenProject
             Color chosenTint = particleKey.Item2;
             if (!particleCache.TryGetValue(particleKey, out var particleTexture))
             {
-                particleCache.Add(particleKey, default);
+                try
+                {
+                    particleCache.Add(particleKey, default);
+
                 particleTexture.template = (Bitmap)particleKey.Item1.Clone();
+                }
+                catch (System.InvalidOperationException)
+                {
+                    Console.WriteLine($"Multiple particles accessing cache at once {DateTime.Now}");
+                    particle.SetData(new Point(Bounds.X + Bounds.Width / 2), MovementVector);
+                    return;
+                }
                 Graphics gfx = Graphics.FromImage(particleTexture.template);
                 float[][] colorMatrixElements = {
                     new float[] {chosenTint.R / 255f * 2,  0,  0,  0,  0},        // red scaling factor
@@ -277,12 +297,28 @@ namespace WinFormsHalloweenProject
                     GetWindowRect(new HandleRef(IntPtr.Zero, windowHandles[i]), out temp);
                     int width = temp.Right - temp.Left;
                     int height = temp.Bottom - temp.Top;
+                    bool isParticle = false;
+                    //foreach (Ghost ghost in Ghosts) // dont forget to add this once there are multiple ghosts
+                    //{
+                    foreach (Particle particle in Particles)
+                    {
+                        if (particle != null)
+                        {
+                            RECT scaledRect = particle.Bounds.ToRECT().Pad(particle.XSpeed, particle.YSpeed);
+                            if (scaledRect.Contains(temp))
+                            {
+                                isParticle = true;
+                                break;
+                            }
+                        }
+                    }
+                    //}
 
-
-                    if (width >= minWindowWidth & height >= minWindowHeight & width <= maxWindowWidth & height <= maxWindowHeight & temp.Left < Screen.PrimaryScreen.Bounds.Right & temp.Top < Screen.PrimaryScreen.Bounds.Bottom & temp.Right > Screen.PrimaryScreen.Bounds.Left & temp.Bottom > Screen.PrimaryScreen.Bounds.Top && !CurrentWindows.Contains(temp))
+                    if (!isParticle & width >= minWindowWidth & height >= minWindowHeight & width <= maxWindowWidth & height <= maxWindowHeight & temp.Left < Screen.PrimaryScreen.Bounds.Right & temp.Top < Screen.PrimaryScreen.Bounds.Bottom & temp.Right > Screen.PrimaryScreen.Bounds.Left & temp.Bottom > Screen.PrimaryScreen.Bounds.Top && !CurrentWindows.Contains(temp))
                     {
                         CurrentWindows.Add(temp);
                     }
+
                 }
             }
             CurrentWindows.Remove(Bounds.ToRECT());
@@ -304,12 +340,12 @@ namespace WinFormsHalloweenProject
                 //graph.SetGraph(CurrentWindows);
             }
 
-            HashSet<RECT> imaginaryWindows = new HashSet<RECT>();
-            imaginaryWindows.Add(new RECT(10, 10, 30, 30));
-            imaginaryWindows.Add(new RECT(20, 20, 40, 40));
-            imaginaryWindows.Add(new RECT(50, 950, 100, 1150));
-            Point[] targetPath = graph.GetPath(imaginaryWindows, new Point(10, 1000));
-
+            //HashSet<RECT> imaginaryWindows = new HashSet<RECT>();
+            //imaginaryWindows.Add(new RECT(10, 10, 30, 30));
+            //imaginaryWindows.Add(new RECT(20, 20, 40, 40));
+            //imaginaryWindows.Add(new RECT(50, 950, 100, 1150));
+            //Point[] targetPath = graph.GetPath(imaginaryWindows, new Point(10, 1000));
+            CurrentPath = graph.GetPath(CurrentWindows, TrueBounds.GetCenter());
 
             //Add rectangle tracking to reduce the amount we need to clean up each time
 
@@ -332,8 +368,8 @@ namespace WinFormsHalloweenProject
             MovementVector = oldLocation - (Size)Location;
             Point newPosition;
             //Point newBounds = Declamp(TrueBounds.Location, currentWindow.Left - TrueBounds.Width, currentWindow.Right, currentWindow.Top - TrueBounds.Height, currentWindow.Bottom);
-            Point newBounds = new Point(TrueBounds.X, TrueBounds.Y);
-            //Point newBounds = graph.Dijkstra(new Point(TrueBounds.X, TrueBounds.Y));
+            //Point newBounds = new Point(TrueBounds.X, TrueBounds.Y);
+            Point newBounds = CurrentPath[1];
             newPosition = new Point(TrueBounds.X.Lerp(newBounds.X, 50), TrueBounds.Y.Lerp(newBounds.Y, 50));
             var oldNewPosition = newPosition;
             newPosition = new Point(Math.Clamp(newPosition.X, Screen.PrimaryScreen.Bounds.Left, Screen.PrimaryScreen.Bounds.Right - TrueBounds.Width), Math.Clamp(newPosition.Y, Screen.PrimaryScreen.Bounds.Top, Screen.PrimaryScreen.Bounds.Bottom - TrueBounds.Height));
@@ -401,7 +437,7 @@ namespace WinFormsHalloweenProject
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
-            SpawnParticles = false;
+            foreach (var particle in Particles) { particle.Close(); }
         }
     }
     static class Extensions
@@ -426,6 +462,11 @@ namespace WinFormsHalloweenProject
         {
             return new Point(targetRectangle.Left + targetRectangle.Width / 2, targetRectangle.Top + targetRectangle.Height / 2);
         }
+
+        public static bool Contains(this RECT rect, RECT targetRect) => targetRect.Left >= rect.Left & targetRect.Right <= rect.Right & targetRect.Top >= rect.Top & targetRect.Bottom <= rect.Bottom;
+        public static RECT Pad(this RECT rect, int pad) => rect.Pad(pad, pad, pad, pad);
+        public static RECT Pad(this RECT rect, int xPad, int yPad) => rect.Pad(xPad, yPad, xPad, yPad);
+        public static RECT Pad(this RECT rect, int leftPad, int topPad, int rightPad, int bottomPad) => new RECT(rect.Left - leftPad, rect.Top - topPad, rect.Right + rightPad, rect.Bottom + bottomPad);
 
         public static Rectangle ToRectangle(this RECT rect)
         {

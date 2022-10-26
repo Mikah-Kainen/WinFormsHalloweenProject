@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -21,6 +22,8 @@ namespace WinformsHalloweenProject
         Point location;
         int scaleDown;
         Size moveVector;
+        public int XSpeed => moveVector.Width;
+        public int YSpeed => moveVector.Height;
        // bool init = false;
         Form1 ghost;
         int ticks;
@@ -32,6 +35,11 @@ namespace WinformsHalloweenProject
             InitializeComponent();
         }
 
+        public void SetData(Point Location, Size moveVector)
+        {
+            this.Location = Location;
+            this.moveVector = moveVector;
+        }
         public Particle SetData((Bitmap, Color) textureKey, Bitmap backgroundImage, Form1 ghost, int lifeTime, int spawnTime, Point location, Size moveVector, float scale = .1f)
         {
             this.ghost = ghost;
@@ -41,10 +49,6 @@ namespace WinformsHalloweenProject
             {
                 this.textureKey = textureKey;
                 BackgroundImage = backgroundImage;
-            }
-            else
-            {
-                ;
             }
 
             BackColor = Color.Lime;
@@ -73,11 +77,6 @@ namespace WinformsHalloweenProject
         private void LifeTimer_Tick(object sender, EventArgs e)
         {
             //if (!init) return;
-            if (!ghost.SpawnParticles)
-            {
-                Close();
-                return;
-            }
 
             Console.WriteLine(ticks += LifeTimer.Interval);
             Location += moveVector;
