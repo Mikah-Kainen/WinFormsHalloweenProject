@@ -190,7 +190,7 @@ namespace WinFormsHalloweenProject
                   Dog10,
             };
 
-            Bounds = new Rectangle(startingPoint, startingSize);
+            Bounds = new Rectangle(startingPoint, BackgroundImage.Size);
             speeds = new Size(2, 2);
 
 
@@ -365,6 +365,8 @@ namespace WinFormsHalloweenProject
                 CurrentPath = graph.GetPath(CurrentWindows, TrueBounds.GetCenter());
             }
             MovementVector = oldLocation - (Size)Location;
+            oldLocation = (Size)Location;
+
             Point newPosition;
             //Point newBounds = Declamp(TrueBounds.Location, currentWindow.Left - TrueBounds.Width, currentWindow.Right, currentWindow.Top - TrueBounds.Height, currentWindow.Bottom);
             //Point newBounds = new Point(TrueBounds.X, TrueBounds.Y);
@@ -394,7 +396,7 @@ namespace WinFormsHalloweenProject
 
         private new Rectangle Move()
         {
-            oldLocation = (Size)Location;
+  
             return new Rectangle((Point)(((Size)TrueBounds.Location) - new Size(leftOffset, topOffset) + shake + speeds), Bounds.Size);
         }
 
