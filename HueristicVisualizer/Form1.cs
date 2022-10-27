@@ -1,5 +1,6 @@
 using Accessibility;
 
+using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace Rectangle_Hueristic
@@ -25,6 +26,7 @@ namespace Rectangle_Hueristic
         TextBox[] boxes;
         Bitmap canvas;
         HashSet<Rectangle> rects = new HashSet<RECT>();
+        LinkedList<RECT> spaces;
 #nullable disable
         public Form1()
         {
@@ -69,7 +71,7 @@ namespace Rectangle_Hueristic
         const int gridSize = 100;
         private void Calculate(object sender, EventArgs e)
         {
-            var spaces = FindBiggestSpace(rects, canvas.Size);
+            spaces = FindBiggestSpace(rects, canvas.Size);
 
             int i = spaces.Count - 1;
             for (var traveller = spaces.Last; traveller != null; traveller = traveller.Previous)
@@ -141,6 +143,31 @@ namespace Rectangle_Hueristic
             }
             return spaces;
         }
+        /// <summary>
+        /// Finds the rectangle best suited to fit an item with a certain aspect ratio at some position
+        /// </summary>
+        /// <param name="location">The location to search from</param>
+        /// <param name="aspectRatio">The aspect ratio being searched for</param>
+        /// <param name="rectangles">The candidate rectangles</param>
+        /// <param name="biggestSize">Outputs the measurment of size for the chosen rectangle</param>
+        /// <returns>The best suited rectangle</returns>
+        static RECT GetBiggestRectangle(Point location, Vector2 aspectRatio, IEnumerable<RECT> rectangles, out int biggestSize)
+        {
+            aspectRatio = aspectRatio / Math.Max(aspectRatio.X, aspectRatio.Y);
+
+            RECT biggestRect = RECT.Empty;
+            biggestSize = 0;
+            foreach (var rect in rectangles)
+            {
+                int newSize;// = Math.Min(rect.Width * aspectRatio.Width, rect.Height * aspectRatio.Height);
+                if (rect.Contains(location) && (newSize = (int)Math.Min(rect.Width * (1 / aspectRatio.X), rect.Height * (1 / aspectRatio.Y))) > biggestSize)
+                {
+                    biggestSize = newSize;
+                    biggestRect = rect;
+                }
+            }
+            return biggestRect;
+        }
         static bool InsertInto(LinkedList<RECT> rects, RECT newRect)
         {
             for (LinkedListNode<RECT> traveller = rects.First, next; traveller != null; traveller = next)
@@ -174,6 +201,8 @@ namespace Rectangle_Hueristic
             foreach (var box in boxes) { box.KeyDown += TypeLetter; }
             canvas = new Bitmap(canvasBox.Width, canvasBox.Height);
             gfx = Graphics.FromImage(canvas);
+            spaces = new LinkedList<RECT>();
+            spaces.AddFirst(new RECT(Point.Empty, canvas.Size));
             gfx.Clear(Color.Green);
             DrawGolf();
             canvasBox.Image = canvas;
@@ -183,6 +212,12 @@ namespace Rectangle_Hueristic
         private void FadeTimer_Tick(object sender, EventArgs e)
         {
             foreach (var box in boxes) { FadeTimer.Enabled = (box.BackColor = Color.FromArgb(255, Math.Min(box.BackColor.G + fadeSpeed, 255), Math.Min(box.BackColor.B + fadeSpeed, 255))).B! < 255; };
+        }
+
+        private void canvasBox_MouseClick(object sender, MouseEventArgs e)
+        {
+            gfx.FillRectangle(Brushes.CornflowerBlue, GetBiggestRectangle(e.Location, new Vector2(1, 2), spaces, out _));
+            canvasBox.Image = canvas;
         }
     }
 }
