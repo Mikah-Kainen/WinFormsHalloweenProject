@@ -97,7 +97,8 @@ namespace WinFormsHalloweenProject
 
         public static Random rand = new Random();
         static Point startingPoint = new Point(10, 10);
-        static Size startingSize = new Size(800, 450);
+        static Size startingSize = new Size(800 / 5, 450 / 5);
+        static Size speed = new Size(1, 1);
         int currentIndex;
         Bitmap[] images;
 
@@ -121,7 +122,7 @@ namespace WinFormsHalloweenProject
 
 
         public HashSet<RECT> CurrentWindows = new HashSet<RECT>();
-        public Point[] CurrentPath = { startingPoint, startingPoint, startingPoint};
+        public Point[] CurrentPath = { startingPoint, startingPoint, startingPoint };
 
         const int degree = 3;
         const double lerpIncrement = .05;
@@ -229,49 +230,50 @@ namespace WinFormsHalloweenProject
 
         public void SetParticle(Particle particle)
         {
-            Tintmap particleKey = (particlesTextures.RandomValue(), tints.RandomValue());
-            Color chosenTint = particleKey.Item2;
-            if (!particleCache.TryGetValue(particleKey, out var particleTexture))
+            try
             {
-                try
+                Tintmap particleKey = (particlesTextures.RandomValue(), tints.RandomValue());
+                Color chosenTint = particleKey.Item2;
+                if (!particleCache.TryGetValue(particleKey, out var particleTexture))
                 {
-                    particleCache.Add(particleKey, default);
+                    particleCache.Add(particleKey, new (particleKey.Item1, new LinkedList<Bitmap>()));
+                    particleTexture.template = (Bitmap)particleKey.Item1.Clone();
 
-                particleTexture.template = (Bitmap)particleKey.Item1.Clone();
-                }
-                catch (System.InvalidOperationException)
-                {
-                    Console.WriteLine($"Multiple particles accessing cache at once {DateTime.Now}");
-                    particle.SetData(new Point(Bounds.X + Bounds.Width / 2), MovementVector);
-                    return;
-                }
-                Graphics gfx = Graphics.FromImage(particleTexture.template);
-                float[][] colorMatrixElements = {
+                    Graphics gfx = Graphics.FromImage(particleTexture.template);
+                    float[][] colorMatrixElements = {
                     new float[] {chosenTint.R / 255f * 2,  0,  0,  0,  0},        // red scaling factor
                     new float[] {0, chosenTint.G / 255f * 2,  0,  0,  0},        // green scaling factor
                     new float[] {0,  0, chosenTint.B / 255f * 2,  0,  0},        // blue scaling factor
                     new float[] {0,  0,  0,  1,  0},
                     new float[] {0,  0,  0,  0,  1}};
-                //TODO: learn how colormatrixes work -Edden
-                ColorMatrix matrix = new ColorMatrix(colorMatrixElements);
-                ImageAttributes attributes = new ImageAttributes();
-                attributes.SetColorMatrix(matrix, ColorMatrixFlag.Default, ColorAdjustType.Bitmap);
-                var bounds = new Rectangle(Point.Empty, particleTexture.template.Size);
-                gfx.DrawImage(particleTexture.template, bounds, bounds.X, bounds.Y, bounds.Width, bounds.Height, GraphicsUnit.Pixel, attributes);
-                particleTexture.maps = new LinkedList<Bitmap>();
-                particleTexture.maps.AddFirst((Bitmap)particleTexture.template.Clone());
-                particleCache[particleKey] = particleTexture;
+                    //TODO: learn how colormatrixes work -Edden
+                    ColorMatrix matrix = new ColorMatrix(colorMatrixElements);
+                    ImageAttributes attributes = new ImageAttributes();
+                    attributes.SetColorMatrix(matrix, ColorMatrixFlag.Default, ColorAdjustType.Bitmap);
+                    var bounds = new Rectangle(Point.Empty, particleTexture.template.Size);
+                    gfx.DrawImage(particleTexture.template, bounds, bounds.X, bounds.Y, bounds.Width, bounds.Height, GraphicsUnit.Pixel, attributes);
+                    particleTexture.maps = new LinkedList<Bitmap>();
+                    particleTexture.maps.AddFirst((Bitmap)particleTexture.template.Clone());
+                    particleCache[particleKey] = particleTexture;
 
+                }
+                else if (particleTexture.maps.Count == 0)
+                {
+                    particleTexture.maps.AddFirst((Bitmap)particleTexture.template.Clone());
+                }
+                var chosenTexture = particleTexture.maps.First.Value;
+                particleTexture.maps.RemoveFirst();
+
+                particle.SetData(particleKey, chosenTexture, this, 500, 500, new Point(Bounds.X + Bounds.Width / 2 - (int)(chosenTexture.Width * .05f), Bounds.Bottom - (int)(chosenTexture.Height * .1f)), MovementVector);
             }
-            else if (particleTexture.maps.Count == 0)
+            catch (System.InvalidOperationException)
             {
-                particleTexture.maps.AddFirst((Bitmap)particleTexture.template.Clone());
+                Console.WriteLine($"Multiple particles accessing cache at once {DateTime.Now}");
+                particle.SetData(new Point(Bounds.X + Bounds.Width / 2), MovementVector);
+                return;
             }
-            var chosenTexture = particleTexture.maps.First.Value;
-            particleTexture.maps.RemoveFirst();
-
-            particle.SetData(particleKey, chosenTexture, this, 500, 500, new Point(Bounds.X + Bounds.Width / 2 - (int)(chosenTexture.Width * .05f), Bounds.Bottom - (int)(chosenTexture.Height * .1f)), MovementVector);
         }
+
 
 
         private void Animation_Tick(object sender, EventArgs e)
@@ -284,6 +286,29 @@ namespace WinFormsHalloweenProject
             lerpPercent += rand.NextError(lerpIncrement);
             lerpPercent = Math.Clamp(lerpPercent, 0, 1);
             Opacity = 1d.Lerp(0, lerpPercent);
+
+
+            //HashSet<RECT> imaginaryWindows = new HashSet<RECT>();
+            //imaginaryWindows.Add(new RECT(10, 10, 30, 30));
+            //imaginaryWindows.Add(new RECT(20, 20, 40, 40));
+            //imaginaryWindows.Add(new RECT(50, 950, 100, 1150));
+            //Point[] targetPath = graph.GetPath(imaginaryWindows, new Point(10, 1000));
+
+            //if (CurrentPath.Length == 0)
+            //{
+            //    CurrentPath = new Point[] { startingPoint, startingPoint, startingPoint };
+            //}
+
+        }
+
+        private void Movement_Tick(object sender, EventArgs e)
+        {
+
+
+            //IntPtr windowHandle = GetForegroundWindow();
+            //RECT currentWindow;
+            //bool result = GetWindowRect(new HandleRef(this, windowHandle), out currentWindow);
+            //currentWindow = (new Rectangle(0, 0, 0, 0)).ToRECT();
 
 
             IntPtr[] windowHandles = GetAllWindows();
@@ -337,40 +362,22 @@ namespace WinFormsHalloweenProject
             }
             if (diff | PreviousWindows.Count > 0)
             {
-                //graph.SetGraph(CurrentWindows);
+                CurrentPath = graph.GetPath(CurrentWindows, TrueBounds.GetCenter());
             }
-
-            //HashSet<RECT> imaginaryWindows = new HashSet<RECT>();
-            //imaginaryWindows.Add(new RECT(10, 10, 30, 30));
-            //imaginaryWindows.Add(new RECT(20, 20, 40, 40));
-            //imaginaryWindows.Add(new RECT(50, 950, 100, 1150));
-            //Point[] targetPath = graph.GetPath(imaginaryWindows, new Point(10, 1000));
-            CurrentPath = graph.GetPath(CurrentWindows, TrueBounds.GetCenter());
-
-            //Add rectangle tracking to reduce the amount we need to clean up each time
-
-            //foreach (RECT rect in currentWindows)
-            //{
-            //    graph.SetWallState(rect.ToRectangle(), true);
-            //}
-        }
-
-        private void Movement_Tick(object sender, EventArgs e)
-        {
-
-
-            //IntPtr windowHandle = GetForegroundWindow();
-            //RECT currentWindow;
-            //bool result = GetWindowRect(new HandleRef(this, windowHandle), out currentWindow);
-            //currentWindow = (new Rectangle(0, 0, 0, 0)).ToRECT();
-
-            Bounds = Move();
             MovementVector = oldLocation - (Size)Location;
             Point newPosition;
             //Point newBounds = Declamp(TrueBounds.Location, currentWindow.Left - TrueBounds.Width, currentWindow.Right, currentWindow.Top - TrueBounds.Height, currentWindow.Bottom);
             //Point newBounds = new Point(TrueBounds.X, TrueBounds.Y);
-            Point newBounds = CurrentPath[1];
-            newPosition = new Point(TrueBounds.X.Lerp(newBounds.X, 50), TrueBounds.Y.Lerp(newBounds.Y, 50));
+            //Point newBounds = CurrentPath[1];
+            if (CurrentPath.Count() > 1)
+            {
+                double distance = Distance(TrueBounds.Location, CurrentPath[1]);
+                newPosition = new Point((int)((double)TrueBounds.X).Lerp(CurrentPath[1].X, 1 / distance * 10 * speed.Width), (int)((double)TrueBounds.Y).Lerp(CurrentPath[1].Y, 1 / distance * 10 * speed.Height));
+            }
+            else
+            {
+                newPosition = Move().Location;
+            }
             var oldNewPosition = newPosition;
             newPosition = new Point(Math.Clamp(newPosition.X, Screen.PrimaryScreen.Bounds.Left, Screen.PrimaryScreen.Bounds.Right - TrueBounds.Width), Math.Clamp(newPosition.Y, Screen.PrimaryScreen.Bounds.Top, Screen.PrimaryScreen.Bounds.Bottom - TrueBounds.Height));
             if (oldNewPosition.X != newPosition.X)
@@ -439,6 +446,7 @@ namespace WinFormsHalloweenProject
         {
             foreach (var particle in Particles) { particle.Close(); }
         }
+        public static double Distance(Point A, Point B) => Math.Sqrt((B.X - A.X) * (B.X - A.X) + (B.Y - A.Y) * (B.Y - A.Y));
     }
     static class Extensions
     {

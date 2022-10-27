@@ -39,6 +39,10 @@ namespace WinformsHalloweenProject
         {
             this.Location = Location;
             this.moveVector = moveVector;
+            if (BackgroundImage != null)
+            {
+                BackgroundImage = (Bitmap)BackgroundImage.Clone();
+            }
         }
         public Particle SetData((Bitmap, Color) textureKey, Bitmap backgroundImage, Form1 ghost, int lifeTime, int spawnTime, Point location, Size moveVector, float scale = .1f)
         {
@@ -49,6 +53,7 @@ namespace WinformsHalloweenProject
             {
                 this.textureKey = textureKey;
                 BackgroundImage = backgroundImage;
+                ClientSize = BackgroundImage.Size / scaleDown;
             }
 
             BackColor = Color.Lime;
@@ -78,17 +83,16 @@ namespace WinformsHalloweenProject
         {
             //if (!init) return;
 
-            Console.WriteLine(ticks += LifeTimer.Interval);
-            Location += moveVector;
-            ClientSize = BackgroundImage.Size / scaleDown;
+            //Console.WriteLine(ticks += LifeTimer.Interval);
+            Location += moveVector;        
             Opacity = spawnTime <= originalSpawnTime? (spawnTime += LifeTimer.Interval) / (double)originalSpawnTime : (timeLeft -= LifeTimer.Interval)/ (double)originalTime;
             if (timeLeft <= 0)
             {
                 //     ObjectPool<Particle>.Instance.Return(this);
+                
                 ghost.particleCache[textureKey].maps.AddLast((Bitmap)BackgroundImage);
                 ghost.SetParticle(this);
-                Thread.Sleep(175);
-                Console.WriteLine();  
+                Thread.Sleep(175);             
             }
            // LifeTimer.Interval = 100;
         }
