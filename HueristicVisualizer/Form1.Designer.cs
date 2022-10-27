@@ -130,7 +130,8 @@
             this.canvasBox.Name = "canvasBox";
             this.canvasBox.Size = new System.Drawing.Size(1068, 603);
             this.canvasBox.TabIndex = 10;
-            this.canvasBox.TabStop = false;
+            this.canvasBox.TabStop = false;            
+            this.canvasBox.MouseClick += new System.Windows.Forms.MouseEventHandler(this.canvasBox_MouseClick);
             // 
             // Recycle
             // 
@@ -140,7 +141,7 @@
             this.Recycle.TabIndex = 11;
             this.Recycle.Text = "Recycle";
             this.Recycle.UseVisualStyleBackColor = true;
-            Recycle.Click += Calculate;
+            this.Recycle.Click += Calculate;
             // 
             // Form1
             // 
