@@ -480,7 +480,7 @@ namespace WinFormsHalloweenProject
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
-            foreach (var particle in Particles) { particle.Close(); }
+            foreach (var particle in Particles) if (particle != null) particle.Close();
         }
         public static double Distance(Point A, Point B) => Math.Sqrt((B.X - A.X) * (B.X - A.X) + (B.Y - A.Y) * (B.Y - A.Y));
 
