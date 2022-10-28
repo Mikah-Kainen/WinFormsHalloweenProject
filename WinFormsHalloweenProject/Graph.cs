@@ -2,65 +2,32 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.NetworkInformation;
+using System.Numerics;
 using System.Reflection.Metadata.Ecma335;
 using System.Security.Cryptography.Xml;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
-using Rectangle_Hueristic;
 
 namespace WinFormsHalloweenProject
 {
-    public class Graph
+    using static Pain;
+    public partial class Graph
     {
         public static double DistanceFunc(Point start, Point end)
         {
             return Math.Sqrt((end.X - start.X) * (end.X - start.X) + (end.Y - start.Y) * (end.Y - start.Y));
         }
 
-        private class Edge
-        {
-            public double Weight;
-            public Node NodeA;
-            public Node NodeB;
-            public Edge(double weight, Node nodeA, Node nodeB)
-            {
-                Weight = weight;
-                NodeA = nodeA;
-                NodeB = nodeB;
-            }
-        }
-
-        private class Node
-        {
-            public int AStarQueueIndex;
-
-            public double KnownDistance;
-            public Node Founder;
-
-            public Point Location;
-            public List<Edge> Edges;
-
-            public Node(Point topLeft)
-            {
-                AStarQueueIndex = -1;
-
-                KnownDistance = double.MaxValue;
-                Founder = null;
-
-                Location = topLeft;
-                Edges = new List<Edge>();
-            }
-        }
-
-
         private List<Node> Nodes = new List<Node>();
         Rectangle Screen;
+        Vector2 aspectRatio;
         public int XOffset => Screen.X;
         public int YOffset => Screen.Y;
-        public Graph(Rectangle screen)
+        public Graph(Rectangle screen, Vector2 aspectRatio)
         {
+            this.aspectRatio = aspectRatio;
             Screen = screen;
             Nodes = new List<Node>();
 
@@ -77,7 +44,7 @@ namespace WinFormsHalloweenProject
 
         public Point[] GetPath(HashSet<Form1.RECT> rectangles, Point ghostLocation)
         {
-            Nodes = new List<Node>();
+            Nodes.Clear();
 
             Func<Form1.RECT, Form1.RECT, bool>[] CheckIntersections =
             {
@@ -90,10 +57,10 @@ namespace WinFormsHalloweenProject
             Node[] nodes = new Node[4]; //topLeft, topRight, bottomRight, bottomLeft
             foreach (Form1.RECT rect in rectangles)
             {
-                nodes[0] = new Node(new Point(rect.Left, rect.Top));
-                nodes[1] = new Node(new Point(rect.Right, rect.Top));
-                nodes[2] = new Node(new Point(rect.Right, rect.Bottom));
-                nodes[3] = new Node(new Point(rect.Left, rect.Bottom));
+                nodes[0] = new Node(new Point(rect.Left, rect.Top), this);
+                nodes[1] = new Node(new Point(rect.Right, rect.Top), this);
+                nodes[2] = new Node(new Point(rect.Right, rect.Bottom), this);
+                nodes[3] = new Node(new Point(rect.Left, rect.Bottom), this);
                 foreach (Form1.RECT otherRect in rectangles)
                 {
                     if (rect.Equals(otherRect)) continue;
@@ -139,15 +106,15 @@ namespace WinFormsHalloweenProject
                 }
             }
 
-            Node startNode = new Node(ghostLocation);
+            Node startNode = new Node(ghostLocation, this);
             Nodes.Add(startNode);
 
-            LinkedList<Rectangle> biggestRectangles = RectangleHueristic.FindBiggestSpace(rectangles.ToRectangles(), Screen.Size);
+            LinkedList<Rectangle> biggestRectangles = Pain.FindBiggestSpace(rectangles.ToRectangles(), Screen.Size);
             //dont forget that if the ghost is already in the biggest rectangle it needs to bounce around
             Node endNode = null;
             if (biggestRectangles.Count > 0)
             {
-                endNode = new Node(biggestRectangles.First().GetCenter());
+                endNode = new Node(biggestRectangles.First().GetCenter(), this);
                 Nodes.Add(endNode);
             }
             else
@@ -160,10 +127,10 @@ namespace WinFormsHalloweenProject
                 for (int compareNodeIndex = currentNodeIndex + 1; compareNodeIndex < Nodes.Count; compareNodeIndex++)
                 {
 
-                    if (Nodes[currentNodeIndex] == startNode || Nodes[compareNodeIndex] == startNode)
-                    {
+                    //if (Nodes[currentNodeIndex] == startNode || Nodes[compareNodeIndex] == startNode)
+                    //{
 
-                    }
+                    //}
 
                     if (!AreConnected(Nodes[currentNodeIndex], Nodes[compareNodeIndex]) && InLineOfSight(Nodes[currentNodeIndex], Nodes[compareNodeIndex], rectangles))
                     {
@@ -172,7 +139,7 @@ namespace WinFormsHalloweenProject
                 }
             }
 
-            List<Node> nodePath = AStar(startNode, endNode, DistanceFunc);
+            List<Node> nodePath = AStar(startNode, endNode, DistanceFunc, biggestRectangles);
             Point[] pointPath = new Point[nodePath.Count];
             int index = 0;
             foreach (Node node in nodePath)
@@ -346,7 +313,7 @@ namespace WinFormsHalloweenProject
             }
         }
 
-        private List<Node> AStar(Node startNode, Node endNode, Func<Point, Point, double> heuristic)
+        private List<Node> AStar(Node startNode, Node endNode, Func<Point, Point, double> heuristic, LinkedList<Rectangle> biggestRectangles)
         {
             List<Node> path = new List<Node>();
             AStarQueue queue = new AStarQueue(endNode.Location, DistanceFunc, Nodes.Count);
@@ -359,7 +326,7 @@ namespace WinFormsHalloweenProject
             //}
 
             startNode.KnownDistance = 0;
-            Node currentNode = startNode;
+            Node? currentNode = startNode;
             queue.Enqueue(startNode);
             while (queue.Count > 0)
             {
@@ -371,10 +338,11 @@ namespace WinFormsHalloweenProject
 
                 for (int i = 0; i < currentNode.Edges.Count; i++)
                 {
-                    Node neighborNode = currentNode.Edges[i].NodeA;
-                    if (currentNode.Edges[i].NodeA == currentNode)
+                    Node neighborNode = currentNode.Edges[i].NodeA == currentNode ? currentNode.Edges[i].NodeB : currentNode.Edges[i].NodeA;
+
+                    if (!currentNode.Edges[i].SizeSet)
                     {
-                        neighborNode = currentNode.Edges[i].NodeB;
+                        currentNode.Edges[i].SetSize(biggestRectangles);
                     }
                     if (currentNode.KnownDistance + currentNode.Edges[i].Weight < neighborNode.KnownDistance)
                     {
