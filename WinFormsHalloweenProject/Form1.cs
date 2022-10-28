@@ -1,7 +1,6 @@
 using System.Linq;
 using System.Collections;
 using System.Runtime.InteropServices;
-using Rectangle_Hueristic;
 
 using static WinFormsHalloweenProject.Form1;
 using WinformsHalloweenProject;
@@ -12,7 +11,7 @@ namespace WinFormsHalloweenProject
 {
     using Tintmap = ValueTuple<Bitmap, Color>;
     using static Particle;
-    using static RectangleHueristic;
+    using static Pain;
     // using ParticlePool = ObjectPool<Particle>;
     public partial class Form1 : Form
     {
@@ -45,6 +44,13 @@ namespace WinFormsHalloweenProject
 
             //public static implicit operator Rectangle(RECT rect) => rect.ToRectangle();
         }
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr FindWindowEx(IntPtr parentHandle,
+                                          IntPtr hwndChildAfer,
+                                          IntPtr className,
+                                          [MarshalAs(UnmanagedType.LPStr)] string windowTitle);
+
 
         [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -99,7 +105,7 @@ namespace WinFormsHalloweenProject
         static Point startingPoint = new Point(10, 10);
         static Size startingSize = new Size(800 / 5, 450 / 5);
         static Size speed = new Size(1, 1);
-        int currentIndex;
+        int currentIndex = 0;
         Bitmap[] images;
 
 
@@ -135,6 +141,9 @@ namespace WinFormsHalloweenProject
         const int particleCount = 8;
         int spawnDelay = 0;
         public Particle[] Particles = new Particle[particleCount];
+
+        int particleIndex = 0;
+        bool particlesKnow = false;
 
 #nullable disable
         public Form1()
@@ -197,16 +206,19 @@ namespace WinFormsHalloweenProject
             Opacity = 50;
 
             //ShowInTaskbar = false;
-            graph = new Graph(Screen.PrimaryScreen.Bounds);
+            graph = new Graph(Screen.PrimaryScreen.Bounds, new System.Numerics.Vector2(TrueBounds.Width, TrueBounds.Height));
+     
         }
 
         void CreateParticle()
         {
             Thread.Sleep(spawnDelay += 175);
-            int currentIndex = spawnDelay / 175 - 1;
+    
             Particle particle = new Particle();
-            Particles[currentIndex] = particle;
+            Particles[particleIndex++] = particle;
             SetParticle(particle);
+            Console.WriteLine(particleIndex - 1);
+
 
             //particle.Show();
             Application.Run(particle);
@@ -229,13 +241,14 @@ namespace WinFormsHalloweenProject
 
         public void SetParticle(Particle particle)
         {
+            Tintmap particleKey = (particlesTextures.RandomValue(), tints.RandomValue());
             try
             {
-                Tintmap particleKey = (particlesTextures.RandomValue(), tints.RandomValue());
+               
                 Color chosenTint = particleKey.Item2;
                 if (!particleCache.TryGetValue(particleKey, out var particleTexture))
                 {
-                    particleCache.Add(particleKey, new (particleKey.Item1, new LinkedList<Bitmap>()));
+                    particleCache.Add(particleKey, new(particleKey.Item1, new LinkedList<Bitmap>()));
                     particleTexture.template = (Bitmap)particleKey.Item1.Clone();
 
                     Graphics gfx = Graphics.FromImage(particleTexture.template);
@@ -284,9 +297,21 @@ namespace WinFormsHalloweenProject
             shake = new Size(rand.NextError(degree), rand.NextError(degree));
             lerpPercent += rand.NextError(lerpIncrement);
             lerpPercent = Math.Clamp(lerpPercent, 0, 1);
-            Opacity = 1d.Lerp(0, lerpPercent);
+            Opacity = 1d.Lerp(0, lerpPercent);               
+            if (!particlesKnow)
+            {
+                particlesKnow = true;
+                foreach (var particle in Particles)
+                {
+                    if (particle == null)
+                    {
+                        particlesKnow = false;
+                        continue;
+                    }
+                    particle.Ghost = this;
+                }
+            }
 
-            this.GetParticleHandles();
             //HashSet<RECT> imaginaryWindows = new HashSet<RECT>();
             //imaginaryWindows.Add(new RECT(10, 10, 30, 30));
             //imaginaryWindows.Add(new RECT(20, 20, 40, 40));
@@ -302,8 +327,6 @@ namespace WinFormsHalloweenProject
 
         private void Movement_Tick(object sender, EventArgs e)
         {
-
-
             //IntPtr windowHandle = GetForegroundWindow();
             //RECT currentWindow;
             //bool result = GetWindowRect(new HandleRef(this, windowHandle), out currentWindow);
@@ -315,6 +338,7 @@ namespace WinFormsHalloweenProject
             List<IntPtr> ghostHandles = GetGhostHandles();
             HashSet<RECT> PreviousWindows = CurrentWindows;
             CurrentWindows = new HashSet<RECT>();
+            int particleCount = 0;
             for (int i = 0; i < windowHandles.Length; i++)
             {
                 bool isParticle = false;
@@ -336,6 +360,10 @@ namespace WinFormsHalloweenProject
                             isGhost = true;
                             break;
                         }
+                        if (!isParticle)
+                        {
+                            CurrentWindows.Add(temp);
+                        }
                     }
                 }
                 if ((!isParticle & !isGhost) && IsWindowVisible(windowHandles[i]))
@@ -349,8 +377,8 @@ namespace WinFormsHalloweenProject
                     {
                         CurrentWindows.Add(temp);
                     }
-
                 }
+                //}                
             }
             bool diff = false;
             foreach (RECT rect in CurrentWindows)
@@ -398,7 +426,7 @@ namespace WinFormsHalloweenProject
 
         private new Rectangle Move()
         {
-  
+
             return new Rectangle((Point)(((Size)TrueBounds.Location) - new Size(leftOffset, topOffset) + shake + speeds), Bounds.Size);
         }
 
@@ -448,7 +476,7 @@ namespace WinFormsHalloweenProject
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
-            foreach (var particle in Particles) { particle.Close(); }
+            foreach (var particle in Particles) if (particle != null) particle.Close();
         }
         public static double Distance(Point A, Point B) => Math.Sqrt((B.X - A.X) * (B.X - A.X) + (B.Y - A.Y) * (B.Y - A.Y));
 
@@ -489,25 +517,6 @@ namespace WinFormsHalloweenProject
             return new Point(targetRectangle.Left + targetRectangle.Width / 2, targetRectangle.Top + targetRectangle.Height / 2);
         }
 
-        public static bool Contains(this RECT rect, RECT targetRect) => targetRect.Left >= rect.Left & targetRect.Right <= rect.Right & targetRect.Top >= rect.Top & targetRect.Bottom <= rect.Bottom;
-        public static RECT Pad(this RECT rect, int pad) => rect.Pad(pad, pad, pad, pad);
-        public static RECT Pad(this RECT rect, int xPad, int yPad) => rect.Pad(xPad, yPad, xPad, yPad);
-        public static RECT Pad(this RECT rect, int leftPad, int topPad, int rightPad, int bottomPad) => new RECT(rect.Left - leftPad, rect.Top - topPad, rect.Right + rightPad, rect.Bottom + bottomPad);
-
-        public static Rectangle ToRectangle(this RECT rect)
-        {
-            return new Rectangle(new Point(rect.Left, rect.Top), new Size(rect.Right - rect.Left, rect.Bottom - rect.Top));
-        }
-
-        public static HashSet<Rectangle> ToRectangles(this HashSet<RECT> rects)
-        {
-            HashSet<Rectangle> returnSet = new HashSet<Rectangle>();
-            foreach (RECT rect in rects)
-            {
-                returnSet.Add(rect.ToRectangle());
-            }
-            return returnSet;
-        }
         /// <summary>
         /// 
         /// </summary>

@@ -39,6 +39,7 @@ namespace WinFormsHalloweenProject {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.Animation = new System.Windows.Forms.Timer(this.components);
             this.Movement = new System.Windows.Forms.Timer(this.components);
+            this.DebugTimer = new System.Windows.Forms.Timer(this.components);
             this.SuspendLayout();
             // 
             // Animation
@@ -51,6 +52,12 @@ namespace WinFormsHalloweenProject {
             this.Movement.Enabled = true;
             this.Movement.Interval = 17;
             this.Movement.Tick += new System.EventHandler(this.Movement_Tick);
+            // 
+            // DebugTimer
+            // 
+            this.DebugTimer.Enabled = true;
+            this.DebugTimer.Interval = 1000;
+            this.DebugTimer.Tick += new System.EventHandler(this.DebugTimer_Tick);
             // 
             // Form1
             // 
@@ -71,6 +78,7 @@ namespace WinFormsHalloweenProject {
 
         private System.Windows.Forms.Timer Animation;
         private System.Windows.Forms.Timer Movement;
+        private System.Windows.Forms.Timer DebugTimer;
 
         /// <summary>
         ///   Returns the cached ResourceManager instance used by this class.

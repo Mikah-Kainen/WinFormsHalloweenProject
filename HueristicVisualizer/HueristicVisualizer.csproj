@@ -9,4 +9,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\WinFormsHalloweenProject\WinformsHalloweenProject.csproj" />
+  </ItemGroup>
+
 </Project>

@@ -1,26 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Rectangle_Hueristic
+namespace WinFormsHalloweenProject
 {
-    using RECT = Rectangle;
-    public static class Extensions
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe byte ToByte(this bool val) => ToByte(&val);
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe byte ToByte(bool* val) => *(byte*)val;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int GetArea(RECT rect) => rect.Width * rect.Height;
-    }
+    using RECT = Rectangle;   
 
     class RectangleComparer : IComparer<RECT>
     {
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int Compare(RECT x, RECT y)
         {
@@ -36,9 +28,8 @@ namespace Rectangle_Hueristic
         public static RectangleComparer Instance { get; } = new RectangleComparer();
     }
 
-    public static class RectangleHueristic
+    public static class Pain
     {
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static LinkedList<RECT> FindBiggestSpace(HashSet<RECT> rectangles, Size bounds)
         {
@@ -80,6 +71,33 @@ namespace Rectangle_Hueristic
             }
             return spaces;
         }
+        /// <summary>
+        /// Finds the rectangle best suited to fit an item with a certain aspect ratio at some position
+        /// </summary>
+        /// <param name="location">The location to search from</param>
+        /// <param name="aspectRatio">The aspect ratio being searched for</param>
+        /// <param name="rectangles">The candidate rectangles</param>
+        /// <param name="biggestSize">Outputs the measurment of size for the chosen rectangle</param>
+        /// <returns>The best suited rectangle</returns>
+
+        public static int GetRectSize(RECT rect, Vector2 aspectRatio) => (int)Math.Min(rect.Width * (1 / aspectRatio.X), rect.Height * (1 / aspectRatio.Y));
+        public static RECT GetBiggestRectangle(Point location, Vector2 aspectRatio, IEnumerable<RECT> rectangles, out int biggestSize)
+        {
+            aspectRatio = aspectRatio / Math.Max(aspectRatio.X, aspectRatio.Y);
+
+            RECT biggestRect = RECT.Empty;
+            biggestSize = 0;
+            foreach (var rect in rectangles)
+            {
+                int newSize;// = Math.Min(rect.Width * aspectRatio.Width, rect.Height * aspectRatio.Height);
+                if (rect.Contains(location) && (newSize = GetRectSize(rect, aspectRatio)) > biggestSize)
+                {
+                    biggestSize = newSize;
+                    biggestRect = rect;
+                }
+            }
+            return biggestRect;
+        }
         static bool InsertInto(LinkedList<RECT> rects, RECT newRect)
         {
             for (LinkedListNode<RECT> traveller = rects.First, next; traveller != null; traveller = next)
@@ -105,7 +123,6 @@ namespace Rectangle_Hueristic
             }
             rects.AddLast(newRect);
             return true;
-        }
-
+        }     
     }
 }

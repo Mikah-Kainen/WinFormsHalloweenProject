@@ -6,11 +6,8 @@
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\HueristicVisualizer\HueristicVisualizer.csproj" />
-  </ItemGroup>
 
   <ItemGroup>
     <Compile Update="Particle.Designer.cs">
