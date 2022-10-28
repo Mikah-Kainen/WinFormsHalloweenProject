@@ -10,6 +10,7 @@ using static WinFormsHalloweenProject.Form1;
 using WinformsHalloweenProject;
 using System.Drawing.Imaging;
 using System.Security.Cryptography.X509Certificates;
+using System.Diagnostics;
 
 namespace WinFormsHalloweenProject
 {
@@ -45,6 +46,13 @@ namespace WinFormsHalloweenProject
 
             //public static implicit operator Rectangle(RECT rect) => rect.ToRectangle();
         }
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr FindWindowEx(IntPtr parentHandle,
+                                          IntPtr hwndChildAfer,
+                                          IntPtr className,
+                                          [MarshalAs(UnmanagedType.LPStr)] string windowTitle);
+
 
         [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -99,7 +107,7 @@ namespace WinFormsHalloweenProject
         static Point startingPoint = new Point(10, 10);
         static Size startingSize = new Size(800 / 5, 450 / 5);
         static Size speed = new Size(1, 1);
-        int currentIndex;
+        int currentIndex = 0;
         Bitmap[] images;
 
 
@@ -135,6 +143,9 @@ namespace WinFormsHalloweenProject
         const int particleCount = 8;
         int spawnDelay = 0;
         public Particle[] Particles = new Particle[particleCount];
+
+        int particleIndex = 0;
+        bool particlesKnow = false;
 
 #nullable disable
         public Form1()
@@ -190,24 +201,27 @@ namespace WinFormsHalloweenProject
                   Dog10,
             };
 
-            Bounds = new Rectangle(startingPoint, BackgroundImage.Size);
+            Bounds = new Rectangle(startingPoint, startingSize);
             speeds = new Size(2, 2);
 
 
             Opacity = 50;
-            ClientSize = BackgroundImage.Size;
+            //ClientSize = BackgroundImage.Size;
 
             //ShowInTaskbar = false;
             graph = new Graph(Screen.PrimaryScreen.Bounds);
+     
         }
 
         void CreateParticle()
         {
             Thread.Sleep(spawnDelay += 175);
-            int currentIndex = spawnDelay / 175 - 1;
+    
             Particle particle = new Particle();
-            Particles[currentIndex] = particle;
+            Particles[particleIndex++] = particle;
             SetParticle(particle);
+            Console.WriteLine(particleIndex - 1);
+
 
             //particle.Show();
             Application.Run(particle);
@@ -230,13 +244,14 @@ namespace WinFormsHalloweenProject
 
         public void SetParticle(Particle particle)
         {
+            Tintmap particleKey = (particlesTextures.RandomValue(), tints.RandomValue());
             try
             {
-                Tintmap particleKey = (particlesTextures.RandomValue(), tints.RandomValue());
+               
                 Color chosenTint = particleKey.Item2;
                 if (!particleCache.TryGetValue(particleKey, out var particleTexture))
                 {
-                    particleCache.Add(particleKey, new (particleKey.Item1, new LinkedList<Bitmap>()));
+                    particleCache.Add(particleKey, new(particleKey.Item1, new LinkedList<Bitmap>()));
                     particleTexture.template = (Bitmap)particleKey.Item1.Clone();
 
                     Graphics gfx = Graphics.FromImage(particleTexture.template);
@@ -286,7 +301,20 @@ namespace WinFormsHalloweenProject
             lerpPercent += rand.NextError(lerpIncrement);
             lerpPercent = Math.Clamp(lerpPercent, 0, 1);
             Opacity = 1d.Lerp(0, lerpPercent);
-
+                        
+            if (!particlesKnow)
+            {
+                particlesKnow = true;
+                foreach (var particle in Particles)
+                {
+                    if (particle == null)
+                    {
+                        particlesKnow = false;
+                        continue;
+                    }
+                    particle.Ghost = this;
+                }
+            }
 
             //HashSet<RECT> imaginaryWindows = new HashSet<RECT>();
             //imaginaryWindows.Add(new RECT(10, 10, 30, 30));
@@ -303,8 +331,6 @@ namespace WinFormsHalloweenProject
 
         private void Movement_Tick(object sender, EventArgs e)
         {
-
-
             //IntPtr windowHandle = GetForegroundWindow();
             //RECT currentWindow;
             //bool result = GetWindowRect(new HandleRef(this, windowHandle), out currentWindow);
@@ -314,6 +340,7 @@ namespace WinFormsHalloweenProject
             IntPtr[] windowHandles = GetAllWindows();
             HashSet<RECT> PreviousWindows = CurrentWindows;
             CurrentWindows = new HashSet<RECT>();
+            int particleCount = 0;
             for (int i = 0; i < windowHandles.Length; i++)
             {
                 if (IsWindowVisible(windowHandles[i]))
@@ -325,26 +352,33 @@ namespace WinFormsHalloweenProject
                     bool isParticle = false;
                     //foreach (Ghost ghost in Ghosts) // dont forget to add this once there are multiple ghosts
                     //{
-                    foreach (Particle particle in Particles)
+                    if (width >= minWindowWidth & height >= minWindowHeight & width <= maxWindowWidth & height <= maxWindowHeight & temp.Left < Screen.PrimaryScreen.Bounds.Right & temp.Top < Screen.PrimaryScreen.Bounds.Bottom & temp.Right > Screen.PrimaryScreen.Bounds.Left & temp.Bottom > Screen.PrimaryScreen.Bounds.Top && !CurrentWindows.Contains(temp))
                     {
-                        if (particle != null)
+                        IntPtr currentWindow = IntPtr.Zero;
+                        do
                         {
-                            RECT scaledRect = particle.Bounds.ToRECT().Pad(particle.XSpeed, particle.YSpeed);
-                            if (scaledRect.Contains(temp))
+                            currentWindow = FindWindowEx(IntPtr.Zero, currentWindow, IntPtr.Zero, "GhostParticle");
+                        } while (currentWindow != IntPtr.Zero);
+                        foreach (Particle particle in Particles)
+                        {
+                            if (particle != null)
                             {
-                                isParticle = true;
-                                break;
+                                RECT scaledRect = particle.Bounds.ToRECT().Pad(particle.XSpeed * 5, particle.YSpeed * 5);
+                                if (scaledRect.Contains(temp))
+                                {
+                                    particleCount++;
+                                    isParticle = true;
+                                    break;
+                                }
                             }
                         }
+                        if (!isParticle)
+                        {
+                            CurrentWindows.Add(temp);
+                        }
                     }
-                    //}
-
-                    if (!isParticle & width >= minWindowWidth & height >= minWindowHeight & width <= maxWindowWidth & height <= maxWindowHeight & temp.Left < Screen.PrimaryScreen.Bounds.Right & temp.Top < Screen.PrimaryScreen.Bounds.Bottom & temp.Right > Screen.PrimaryScreen.Bounds.Left & temp.Bottom > Screen.PrimaryScreen.Bounds.Top && !CurrentWindows.Contains(temp))
-                    {
-                        CurrentWindows.Add(temp);
-                    }
-
                 }
+                //}                
             }
             CurrentWindows.Remove(Bounds.ToRECT());
             bool diff = false;
@@ -396,7 +430,7 @@ namespace WinFormsHalloweenProject
 
         private new Rectangle Move()
         {
-  
+
             return new Rectangle((Point)(((Size)TrueBounds.Location) - new Size(leftOffset, topOffset) + shake + speeds), Bounds.Size);
         }
 
@@ -449,6 +483,36 @@ namespace WinFormsHalloweenProject
             foreach (var particle in Particles) { particle.Close(); }
         }
         public static double Distance(Point A, Point B) => Math.Sqrt((B.X - A.X) * (B.X - A.X) + (B.Y - A.Y) * (B.Y - A.Y));
+
+        Process[] oldProcesses = new Process[0];
+        Process[] currentProcesses = new Process[0];
+
+        private void DebugTimer_Tick(object sender, EventArgs e)
+        {
+            //List<Process> processDelta = new List<Process>();
+            //oldProcesses = currentProcesses;
+            //currentProcesses = Process.GetProcesses();
+            //foreach(Process currentProcess in currentProcesses)
+            //{
+            //    bool wasFound = false;
+            //    foreach (Process oldProcess in oldProcesses)
+            //    {
+            //        if(currentProcess == oldProcess)
+            //        {
+            //            wasFound = true;
+            //        }
+            //    }
+            //    if(!wasFound)
+            //    {
+            //        processDelta.Add(currentProcess);
+            //    }
+            //}
+            //if(processDelta.Count > 0)
+            //{
+
+            //}
+            Process targetProcess = Process.GetProcessesByName("WinformsHalloweenProject").FirstOrDefault();
+        }
     }
     static class Extensions
     {
