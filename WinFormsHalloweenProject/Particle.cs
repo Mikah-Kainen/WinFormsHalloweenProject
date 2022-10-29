@@ -25,7 +25,7 @@ namespace WinformsHalloweenProject
         public int XSpeed => moveVector.Width;
         public int YSpeed => moveVector.Height;
        // bool init = false;
-        internal Form1 Ghost { get; set; }
+        internal Ghost Ghost { get; set; }
         int ticks;
         (Bitmap, Color) textureKey;
         //  Bitmap realBackgroundImage;
@@ -46,7 +46,7 @@ namespace WinformsHalloweenProject
                 BackgroundImage = (Bitmap)BackgroundImage.Clone();
             }
         }
-        public Particle SetData((Bitmap, Color) textureKey, Bitmap backgroundImage, Form1 ghost, int lifeTime, int spawnTime, Point location, Size moveVector, float scale = .1f)
+        public Particle SetData((Bitmap, Color) textureKey, Bitmap backgroundImage, Ghost ghost, int lifeTime, int spawnTime, Point location, Size moveVector, float scale = .1f)
         {
             this.Ghost = ghost;
             scaleDown = (int)(1 / scale);

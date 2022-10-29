@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace WinFormsHalloweenProject
 {
-    using static WinFormsHalloweenProject.Form1;
+    using static WinFormsHalloweenProject.Ghost;
 
     public static class Extensions
     {        
@@ -70,7 +70,7 @@ namespace WinFormsHalloweenProject
         /// <param name="percent">0 - 100</param>
         /// <returns></returns>
         public static int Lerp(this int a, int b, int percent) => (a * percent + b * (100 - percent)) / 100;
-        public static T RandomValue<T>(this T[] data) => data[Form1.rand.Next(data.Length)];
+        public static T RandomValue<T>(this T[] data) => data[Ghost.rand.Next(data.Length)];
 
     }
 }

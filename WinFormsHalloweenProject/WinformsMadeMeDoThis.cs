@@ -10,7 +10,7 @@ namespace WinFormsHalloweenProject
 {
     using RECT = Rectangle;   
 
-    class RectangleComparer : IComparer<RECT>
+    public class RectangleComparer : IComparer<RECT>
     {
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

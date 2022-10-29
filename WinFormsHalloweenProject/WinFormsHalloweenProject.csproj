@@ -23,7 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Update="Form1.resx">
+    <EmbeddedResource Update="Ghost.resx">
       <Generator></Generator>
     </EmbeddedResource>
     <EmbeddedResource Update="Particle.resx">

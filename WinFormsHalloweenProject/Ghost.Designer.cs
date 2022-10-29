@@ -22,7 +22,7 @@ namespace WinFormsHalloweenProject {
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
    // [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    public partial class Form1 {
+    public partial class Ghost {
 
         private System.ComponentModel.IContainer components = null;
 
@@ -36,7 +36,7 @@ namespace WinFormsHalloweenProject {
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Ghost));
             this.Animation = new System.Windows.Forms.Timer(this.components);
             this.Movement = new System.Windows.Forms.Timer(this.components);
             this.DebugTimer = new System.Windows.Forms.Timer(this.components);
@@ -53,13 +53,7 @@ namespace WinFormsHalloweenProject {
             this.Movement.Interval = 17;
             this.Movement.Tick += new System.EventHandler(this.Movement_Tick);
             // 
-            // DebugTimer
-            // 
-            this.DebugTimer.Enabled = true;
-            this.DebugTimer.Interval = 1000;
-            this.DebugTimer.Tick += new System.EventHandler(this.DebugTimer_Tick);
-            // 
-            // Form1
+            // Ghost
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -68,10 +62,10 @@ namespace WinFormsHalloweenProject {
             this.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             this.ClientSize = new System.Drawing.Size(800, 450);
             this.DoubleBuffered = true;
-            this.Name = "Form1";
-            this.Text = "Form1";
-            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
-            this.Load += new System.EventHandler(this.Form1_Load_1);
+            this.Name = "Ghost";
+            this.Text = "Ghost";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Ghost_FormClosing);
+            this.Load += new System.EventHandler(this.Ghost_Load_1);
             this.ResumeLayout(false);
 
         }
@@ -87,7 +81,7 @@ namespace WinFormsHalloweenProject {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("WinFormsHalloweenProject.Form1", typeof(Form1).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("WinFormsHalloweenProject.Ghost", typeof(Ghost).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;

@@ -42,11 +42,11 @@ namespace WinFormsHalloweenProject
             //then add path width detection
         }
 
-        public Point[] GetPath(HashSet<Form1.RECT> rectangles, Point ghostLocation)
+        public Point[] GetPath(HashSet<Ghost.RECT> rectangles, Point ghostLocation)
         {
             Nodes.Clear();
 
-            Func<Form1.RECT, Form1.RECT, bool>[] CheckIntersections =
+            Func<Ghost.RECT, Ghost.RECT, bool>[] CheckIntersections =
             {
                 (rect, scaledRect) => rect.Left <= scaledRect.Right & rect.Left >= scaledRect.Left & (rect.Top <= scaledRect.Bottom & rect.Bottom >= scaledRect.Top), //scaledRect blocks the left
                 (rect, scaledRect) => rect.Top <= scaledRect.Bottom & rect.Top >= scaledRect.Top & (rect.Left <= scaledRect.Right & rect.Right >= rect.Left), //scaledRect blocks the top
@@ -55,13 +55,13 @@ namespace WinFormsHalloweenProject
             };
 
             Node[] nodes = new Node[4]; //topLeft, topRight, bottomRight, bottomLeft
-            foreach (Form1.RECT rect in rectangles)
+            foreach (Ghost.RECT rect in rectangles)
             {
                 nodes[0] = new Node(new Point(rect.Left, rect.Top), this);
                 nodes[1] = new Node(new Point(rect.Right, rect.Top), this);
                 nodes[2] = new Node(new Point(rect.Right, rect.Bottom), this);
                 nodes[3] = new Node(new Point(rect.Left, rect.Bottom), this);
-                foreach (Form1.RECT otherRect in rectangles)
+                foreach (Ghost.RECT otherRect in rectangles)
                 {
                     if (rect.Equals(otherRect)) continue;
                     for (int i = 0; i < nodes.Length; i++)
@@ -86,10 +86,10 @@ namespace WinFormsHalloweenProject
                     if (previousResult & doesCurrentNodeExist)
                     {
                         bool doesIntersect = false;
-                        foreach (Form1.RECT rectForScale in rectangles)
+                        foreach (Ghost.RECT rectForScale in rectangles)
                         {
                             if (rect.Equals(rectForScale)) continue;
-                            Form1.RECT scaledRect = new Form1.RECT(rectForScale.Left - 1, rectForScale.Top - 1, rectForScale.Right + 1, rectForScale.Bottom + 1);
+                            Ghost.RECT scaledRect = new Ghost.RECT(rectForScale.Left - 1, rectForScale.Top - 1, rectForScale.Right + 1, rectForScale.Bottom + 1);
                             doesIntersect = CheckIntersections[i](rect, scaledRect);
                             if (doesIntersect)
                             {
@@ -374,7 +374,7 @@ namespace WinFormsHalloweenProject
             return path;
         }
 
-        private bool InLineOfSight(Node nodeA, Node nodeB, HashSet<Form1.RECT> activeRectangles)
+        private bool InLineOfSight(Node nodeA, Node nodeB, HashSet<Ghost.RECT> activeRectangles)
         {
             Point pointA = nodeA.Location;
             Point pointB = nodeB.Location;
@@ -398,7 +398,7 @@ namespace WinFormsHalloweenProject
                 currentPercent += percentIncrement;
 
                 currentPoint = new Point((int)xValue, (int)yValue);
-                foreach (Form1.RECT rect in activeRectangles)
+                foreach (Ghost.RECT rect in activeRectangles)
                 {
                     if (rect.Contains(currentPoint))
                     {
