@@ -15,6 +15,13 @@ namespace WinFormsHalloweenProject
 {
     using static Pain;
 
+    public enum PathStatus
+    {
+        GhostInWall,
+        NoPath,
+        Path
+    }
+
     public partial class Graph
     {
         public static double DistanceFunc(Point start, Point end)
@@ -130,19 +137,8 @@ namespace WinFormsHalloweenProject
             return startNode;
         }
 
-        public Point[] GetPath(HashSet<Ghost.RECT> rectangles, Point ghostLocation, out bool noPath)
+        public Point[] GetPath(HashSet<Ghost.RECT> rectangles, Point ghostLocation, out PathStatus result, out Rectangle endGoal)
         {
-            foreach (var rect in rectangles)
-            {
-                if (rect.Contains(ghostLocation))
-                {
-                    noPath = true;
-                    return null;
-                }
-            }
-
-
-
             Node startNode = SetupNodes(rectangles, ghostLocation);
             RectangleComparer.Instance.Start = new Vector2(startNode.Location.X, startNode.Location.Y);
             LinkedList<Rectangle> biggestRectangles = Pain.FindBiggestSpace(rectangles.ToRectangles(), Screen.Size);
@@ -156,8 +152,19 @@ namespace WinFormsHalloweenProject
             }
             else
             {
-                noPath = true;
-                return default;
+                result = PathStatus.NoPath;
+                endGoal = Rectangle.Empty;
+                return null;
+            }
+
+            foreach (var rect in rectangles)
+            {
+                if (rect.Contains(ghostLocation))
+                {
+                    endGoal = rect.ToRectangle();
+                    result = PathStatus.GhostInWall;
+                    return null;
+                }
             }
 
             for (int currentNodeIndex = 0; currentNodeIndex < Nodes.Count; currentNodeIndex++)
@@ -187,7 +194,8 @@ namespace WinFormsHalloweenProject
                 curr = curr.Next;
                 if (curr == null)
                 {
-                    noPath = true;
+                    result = PathStatus.NoPath;
+                    endGoal = Rectangle.Empty;
                     return null;
                 }
                 RemoveNode(endNode);
@@ -216,7 +224,8 @@ namespace WinFormsHalloweenProject
                 pointPath[index] = node.Location;
                 index++;
             }
-            noPath = false;
+            result = PathStatus.Path;
+            endGoal = curr.Value;
             return pointPath;
         }
 

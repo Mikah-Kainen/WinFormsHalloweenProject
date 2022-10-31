@@ -64,7 +64,7 @@ namespace WinFormsHalloweenProject {
             this.Name = "Ghost";
             this.Text = "Ghost";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Ghost_FormClosing);
-            this.Load += new System.EventHandler(this.Ghost_Load_1);
+            this.Load += new System.EventHandler(this.Ghost_Load);
             this.ResumeLayout(false);
 
         }

@@ -91,9 +91,21 @@ namespace WinformsHalloweenProject
             if (timeLeft <= 0 && Ghost != null)
             {
                 //     ObjectPool<Particle>.Instance.Return(this);
-                if (Ghost.particleCache.ContainsKey(textureKey))
+                bool safe = false;
+                while (!safe)
                 {
-                    Ghost.particleCache[textureKey].maps.AddLast((Bitmap)BackgroundImage);
+                    safe = true;
+                    try
+                    {
+                        if (Ghost.particleCache.ContainsKey(textureKey))
+                        {
+                            Ghost.particleCache[textureKey].maps.AddLast((Bitmap)BackgroundImage);
+                        }
+                    }
+                    catch
+                    {
+                        safe = false;
+                    }
                 }
                 Ghost.SetParticle(this);
                 Thread.Sleep(175);             

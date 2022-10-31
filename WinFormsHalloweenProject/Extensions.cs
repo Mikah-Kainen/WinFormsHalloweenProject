@@ -27,6 +27,7 @@ namespace WinFormsHalloweenProject
         public static double NextError(this Random rand, double degree) => rand.NextDouble() * degree * (rand.Next(0, 2) * 2 - 1);
 
         public static double Lerp(this double a, double b, double percent) => b * percent + a * (1 - percent);
+        public static float Lerp(this float a, float b, float percent) => b * percent + a * (1 - percent);
 
         public static RECT ToRECT(this Rectangle rect)
         {

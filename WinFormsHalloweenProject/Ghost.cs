@@ -7,15 +7,17 @@ using WinformsHalloweenProject;
 using System.Drawing.Imaging;
 using System.Windows.Forms.VisualStyles;
 using System.Diagnostics;
+using System.Text;
 
 namespace WinFormsHalloweenProject
 {
     using Tintmap = ValueTuple<Bitmap, Color>;
     using static Particle;
-    using static Pain;
+    // using static Pain;
     // using ParticlePool = ObjectPool<Particle>;
     public partial class Ghost : Form
     {
+        #region PInvoke
         [DllImport("user32.dll")]
         static extern IntPtr GetForegroundWindow();
 
@@ -85,6 +87,65 @@ namespace WinFormsHalloweenProject
 
 
 
+
+        /// <summary>
+        ///     Copies the text of the specified window's title bar (if it has one) into a buffer. If the specified window is a
+        ///     control, the text of the control is copied. However, GetWindowText cannot retrieve the text of a control in another
+        ///     application.
+        ///     <para>
+        ///     Go to https://msdn.microsoft.com/en-us/library/windows/desktop/ms633520%28v=vs.85%29.aspx  for more
+        ///     information
+        ///     </para>
+        /// </summary>
+        /// <param name="hWnd">
+        ///     C++ ( hWnd [in]. Type: HWND )<br />A <see cref="IntPtr" /> handle to the window or control containing the text.
+        /// </param>
+        /// <param name="lpString">
+        ///     C++ ( lpString [out]. Type: LPTSTR )<br />The <see cref="StringBuilder" /> buffer that will receive the text. If
+        ///     the string is as long or longer than the buffer, the string is truncated and terminated with a null character.
+        /// </param>
+        /// <param name="nMaxCount">
+        ///     C++ ( nMaxCount [in]. Type: int )<br /> Should be equivalent to
+        ///     <see cref="StringBuilder.Length" /> after call returns. The <see cref="int" /> maximum number of characters to copy
+        ///     to the buffer, including the null character. If the text exceeds this limit, it is truncated.
+        /// </param>
+        /// <returns>
+        ///     If the function succeeds, the return value is the length, in characters, of the copied string, not including
+        ///     the terminating null character. If the window has no title bar or text, if the title bar is empty, or if the window
+        ///     or control handle is invalid, the return value is zero. To get extended error information, call GetLastError.<br />
+        ///     This function cannot retrieve the text of an edit control in another application.
+        /// </returns>
+        /// <remarks>
+        ///     If the target window is owned by the current process, GetWindowText causes a WM_GETTEXT message to be sent to the
+        ///     specified window or control. If the target window is owned by another process and has a caption, GetWindowText
+        ///     retrieves the window caption text. If the window does not have a caption, the return value is a null string. This
+        ///     behavior is by design. It allows applications to call GetWindowText without becoming unresponsive if the process
+        ///     that owns the target window is not responding. However, if the target window is not responding and it belongs to
+        ///     the calling application, GetWindowText will cause the calling application to become unresponsive. To retrieve the
+        ///     text of a control in another process, send a WM_GETTEXT message directly instead of calling GetWindowText.<br />For
+        ///     an example go to
+        ///     <see cref="!:https://msdn.microsoft.com/en-us/library/windows/desktop/ms644928%28v=vs.85%29.aspx#sending">
+        ///     Sending a
+        ///     Message.
+        ///     </see>
+        /// </remarks>
+        /// 
+
+        [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        static extern int GetWindowTextLength(IntPtr hWnd);
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        static extern int GetWindowText(IntPtr hWnd, StringBuilder lpString, int nMaxCount);
+
+        public static string GetText(IntPtr hWnd)
+        {
+            // Allocate correct string length first
+            int length = GetWindowTextLength(hWnd);
+            StringBuilder sb = new StringBuilder(length + 1);
+            GetWindowText(hWnd, sb, sb.Capacity);
+            return sb.ToString();
+        }
+
         /// <summary>
         /// ///////////////////////////////////////////NEED TO MAKE A MAP FOR GHOST NAVIGATION!! GOOD lUCK FUTURE SELF
         /// First identify the open spaces on the graph
@@ -92,7 +153,7 @@ namespace WinFormsHalloweenProject
         /// A* there with the A* returning a pixel by pixel path including the path width and the ghost calculating how much it can shake each step of the way
         /// Maybe a rectangle by rectangle path?
         /// </summary>
-
+        #endregion
 
 
         public static Random rand = new Random();
@@ -122,6 +183,18 @@ namespace WinFormsHalloweenProject
 
         public HashSet<RECT> CurrentWindows = new HashSet<RECT>();
         public Point[] CurrentPath = { startingPoint, startingPoint, startingPoint };
+        int pathIndex = 0;
+        float totalDistance = 0;
+        float currentDistance = 0;
+        float targetDistance = 0;
+        float globalLerpFactor = 0;
+        float lerpFactor = 0;
+        bool vibing = false;
+        PathStatus pathResult = PathStatus.Path;
+        Rectangle endGoal;
+        float[] distances;
+
+        Point trueLocation;
 
         const int degree = 3;
         const double lerpIncrement = .05;
@@ -163,7 +236,7 @@ namespace WinFormsHalloweenProject
         };
 
         public readonly Dictionary<Tintmap, (Bitmap template, LinkedList<Bitmap> maps)> particleCache = new Dictionary<Tintmap, (Bitmap, LinkedList<Bitmap>)>();
-        private void Ghost_Load_1(object sender, EventArgs e)
+        private void Ghost_Load(object sender, EventArgs e)
         {
             //ParticlePool.Instance.Populate(8, () => new Particle());
             for (int i = 0; i++ < particleCount;)
@@ -200,11 +273,12 @@ namespace WinFormsHalloweenProject
 
             //ShowInTaskbar = false;
             graph = new Graph(Screen.PrimaryScreen.Bounds, new System.Numerics.Vector2(TrueBounds.Width, TrueBounds.Height));
-
+            trueLocation = Location;
         }
 
         void CreateParticle()
         {
+            //return;
             Thread.Sleep(spawnDelay += 175);
 
             Particle particle = new Particle();
@@ -241,7 +315,7 @@ namespace WinFormsHalloweenProject
                 Color chosenTint = particleKey.Item2;
                 if (!particleCache.TryGetValue(particleKey, out var particleTexture))
                 {
-                    particleCache.Add(particleKey, new(particleKey.Item1, new LinkedList<Bitmap>()));
+                    particleCache[particleKey] = new(particleKey.Item1, new LinkedList<Bitmap>());
                     particleTexture.template = (Bitmap)particleKey.Item1.Clone();
 
                     Graphics gfx = Graphics.FromImage(particleTexture.template);
@@ -262,7 +336,7 @@ namespace WinFormsHalloweenProject
                     particleCache[particleKey] = particleTexture;
 
                 }
-                else if (particleTexture.maps.Count == 0)
+                if (particleTexture.maps.Count == 0)
                 {
                     particleTexture.maps.AddFirst((Bitmap)particleTexture.template.Clone());
                 }
@@ -282,6 +356,7 @@ namespace WinFormsHalloweenProject
 
         private void Animation_Tick(object sender, EventArgs e)
         {
+            #region old 
             //IntPtr[] windows = GetAllWindows();
             //Process[] allProcesses = Process.GetProcesses();
             //List<Process> targetProcesses = new List<Process>();
@@ -299,6 +374,7 @@ namespace WinFormsHalloweenProject
             //}
 
             // SpawnParticles = false;
+            #endregion
             BackgroundImage = images[currentIndex];
             currentIndex = (currentIndex + 1) % images.Length;
 
@@ -321,7 +397,7 @@ namespace WinFormsHalloweenProject
             }
         }
 
-        private void Movement_Tick(object sender, EventArgs e)
+        bool GetPath(bool diff, ref PathStatus pathResult)
         {
             IntPtr[] windowHandles = GetAllWindows();
             List<IntPtr> particleHandles = GetParticleHandles();
@@ -340,31 +416,33 @@ namespace WinFormsHalloweenProject
                         break;
                     }
                 }
-                if (!isParticle)
+                if (isParticle) continue;
+
+                foreach (IntPtr ghost in ghostHandles)
                 {
-                    foreach (IntPtr ghost in ghostHandles)
+                    if (windowHandles[i] == ghost)
                     {
-                        if (windowHandles[i] == ghost)
-                        {
-                            isGhost = true;
-                            break;
-                        }
+                        isGhost = true;
+                        break;
                     }
                 }
-                if ((!isParticle & !isGhost) && IsWindowVisible(windowHandles[i]))
+                if (isGhost) continue;
+
+                if (IsWindowVisible(windowHandles[i]))
                 {
                     RECT temp;
                     GetWindowRect(new HandleRef(IntPtr.Zero, windowHandles[i]), out temp);
+                    StringBuilder text = new StringBuilder(0, 256);
+                    var handleText = GetText(windowHandles[i]);
                     int width = temp.Right - temp.Left;
                     int height = temp.Bottom - temp.Top;
-
-                    if ((width >= minWindowWidth | height >= minWindowHeight) & (width <= maxWindowWidth | height <= maxWindowHeight) & temp.Left < Screen.PrimaryScreen.Bounds.Right & temp.Top < Screen.PrimaryScreen.Bounds.Bottom & temp.Right > Screen.PrimaryScreen.Bounds.Left & temp.Bottom > Screen.PrimaryScreen.Bounds.Top && !CurrentWindows.Contains(temp))
+                    if ((handleText != "" && handleText != "Mail" && handleText != "Alienware Command Center" && handleText != "Settings" && handleText != "Calculator" && (width >= minWindowWidth | height >= minWindowHeight) & (width <= maxWindowWidth | height <= maxWindowHeight) & (temp.Left < Screen.PrimaryScreen.Bounds.Right & temp.Top < Screen.PrimaryScreen.Bounds.Bottom & temp.Right > Screen.PrimaryScreen.Bounds.Left & temp.Bottom > Screen.PrimaryScreen.Bounds.Top)) && !CurrentWindows.Contains(temp))
                     {
                         CurrentWindows.Add(temp);
                     }
-                }             
+                }
             }
-            bool diff = false;
+            //bool diff = false;
             foreach (RECT rect in CurrentWindows)
             {
                 if (PreviousWindows.Contains(rect))
@@ -379,18 +457,113 @@ namespace WinFormsHalloweenProject
             }
             if (diff | PreviousWindows.Count > 0)
             {
-                CurrentPath = graph.GetPath(CurrentWindows, TrueBounds.GetCenter(), out var noPath);
+                CurrentPath = graph.GetPath(CurrentWindows, trueLocation, out pathResult, out endGoal);
+                return true;
+            }
+            return false;
+        }
+
+        // const double wantedSpeed = 5;
+        private void Movement_Tick(object sender, EventArgs e)
+        {
+            if (GetPath(false, ref pathResult))
+            {
+                vibing = false;
+                pathIndex = -1;
+                globalLerpFactor = 0.001f;
+                currentDistance = 0;
+                totalDistance = 0;
+
+                if (pathResult == PathStatus.NoPath) return;
+
+                var prevLocation = trueLocation;
+                RECT evilRect = endGoal.ToRECT();
+                for (int i = 0; pathResult != PathStatus.Path; i++)
+                {
+                    if (i == 5 || pathResult == PathStatus.NoPath)
+                    {
+                        pathResult = PathStatus.NoPath;
+                        trueLocation = prevLocation;
+                        return;
+                    }
+                    evilRect = new RECT(Math.Min(endGoal.Left, evilRect.Left), Math.Min(endGoal.Top, evilRect.Top), Math.Max(endGoal.Right, evilRect.Right), Math.Max(endGoal.Bottom, evilRect.Bottom));
+                    trueLocation = Declamp(trueLocation, evilRect.Left, evilRect.Right, evilRect.Top, evilRect.Bottom);
+                    GetPath(true, ref pathResult);
+                }
+
+
+                distances = new float[CurrentPath.Length - 1];
+                var oldPoint = CurrentPath[0];
+                for (int i = 1; i < CurrentPath.Length; i++)
+                {
+                    totalDistance += distances[i - 1] = (float)Distance(oldPoint, CurrentPath[i]);
+                    oldPoint = CurrentPath[i];
+                }
+                targetDistance = 0;
+            }
+            else if (pathResult == PathStatus.NoPath)
+            {
+                Console.WriteLine("Nowhere the ghost can go...you monster");
+                return;
             }
             MovementVector = oldLocation - (Size)Location;
             oldLocation = (Size)Location;
 
+            if (vibing = vibing || endGoal.Contains(TrueBounds))
+            {
+                //vibe
+                return;
+            }
+
+            //Console.WriteLine(vibing);
+            //Console.WriteLine("i" + pathIndex);
+            //Console.WriteLine("pl" + (CurrentPath.Length - 1));
+
+
+            //if (Distance(trueLocation, CurrentPath[pathIndex]) <= 1)
+            //{
+            //    float tempDistance = 0;
+            //    do
+            //    {
+            //        if (vibing = ++pathIndex == CurrentPath.Length) return;
+            //        float prevTempDistance = 1;
+            //        tempDistance += currentDistance = (float)Distance(trueLocation, CurrentPath[pathIndex]);
+            //        lerpFactor = (globalLerpFactor / Math.Max(tempDistance, 1) * totalDistance);// - Math.Abs(lerpFactor / prevTempDistance * totalDistance);
+            //    } while (lerpFactor > 1);
+
+            //}
+            //else
+            //{
+
+            var lerpChange = Math.Clamp(globalLerpFactor * (1 + (globalLerpFactor <= .5).ToByte() * 2 - 1) * .1f, .005f, .05f);
+            //lerpFactor += (globalLerpFactor / Math.Max((float)Distance(trueLocation, CurrentPath[pathIndex]), 1) * totalDistance);
+            globalLerpFactor += lerpChange;            
+            currentDistance = 0f.Lerp(totalDistance, globalLerpFactor);
+            if (vibing = globalLerpFactor >= 1) return;
+            if (currentDistance >= targetDistance)
+            {
+                targetDistance += distances[++pathIndex];                
+            }
+            //}
+
+
+            trueLocation = CurrentPath[pathIndex + 1].Lerp(trueLocation, (currentDistance - (targetDistance - distances[pathIndex])) / distances[pathIndex]);
+
+            Location = trueLocation;
+
+            /*
             Point newPosition = new Point(oldLocation.Width, oldLocation.Height);
-            if (CurrentPath.Count() > 1)
+            if (CurrentPath.Length > 1)
             {
                 double distance = Distance(TrueBounds.Location, CurrentPath[1]);
                 newPosition = new Point((int)((double)TrueBounds.X).Lerp(CurrentPath[1].X, 1 / distance * 10 * speed.Width), (int)((double)TrueBounds.Y).Lerp(CurrentPath[1].Y, 1 / distance * 10 * speed.Height));
             }
-
+            if (newPosition.X < 1920 & newPosition.Y < 1080 & newPosition.X > 0 & newPosition.Y > 0)
+            {
+                Bounds = new Rectangle((Point)((Size)newPosition - new Size(leftOffset, topOffset)), Bounds.Size);
+            }
+            */
+            #region old
 
             //else
             //{
@@ -406,18 +579,15 @@ namespace WinFormsHalloweenProject
             //{
             //    speeds.Height *= -1;
             //}
+            #endregion
 
-            if (newPosition.X < 1920 & newPosition.Y < 1080 & newPosition.X > 0 & newPosition.Y > 0)
-            {
-                Bounds = new Rectangle((Point)((Size)newPosition - new Size(leftOffset, topOffset)), Bounds.Size);
-            }
         }
-
+        #region old
         //private new Rectangle Move()
         //{
         //    return new Rectangle((Point)(((Size)TrueBounds.Location) - new Size(leftOffset, topOffset) + shake + speeds), Bounds.Size);
         //}
-
+        #endregion
         public Point Declamp(Point val, int xMin, int xMax, int yMin, int yMax)
         {
             Point returnVal = val;
