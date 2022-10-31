@@ -39,7 +39,6 @@ namespace WinFormsHalloweenProject {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.Animation = new System.Windows.Forms.Timer(this.components);
             this.Movement = new System.Windows.Forms.Timer(this.components);
-            this.DebugTimer = new System.Windows.Forms.Timer(this.components);
             this.SuspendLayout();
             // 
             // Animation
@@ -53,21 +52,16 @@ namespace WinFormsHalloweenProject {
             this.Movement.Interval = 17;
             this.Movement.Tick += new System.EventHandler(this.Movement_Tick);
             // 
-            // DebugTimer
-            // 
-            this.DebugTimer.Enabled = true;
-            this.DebugTimer.Interval = 1000;
-            this.DebugTimer.Tick += new System.EventHandler(this.DebugTimer_Tick);
-            // 
             // Form1
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.LawnGreen;
             this.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("$this.BackgroundImage")));
             this.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
-            this.ClientSize = new System.Drawing.Size(800, 450);
+            this.ClientSize = new System.Drawing.Size(914, 600);
             this.DoubleBuffered = true;
+            this.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.Name = "Form1";
             this.Text = "Form1";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
@@ -78,7 +72,6 @@ namespace WinFormsHalloweenProject {
 
         private System.Windows.Forms.Timer Animation;
         private System.Windows.Forms.Timer Movement;
-        private System.Windows.Forms.Timer DebugTimer;
 
         /// <summary>
         ///   Returns the cached ResourceManager instance used by this class.

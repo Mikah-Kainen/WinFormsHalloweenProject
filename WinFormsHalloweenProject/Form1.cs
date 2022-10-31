@@ -45,11 +45,11 @@ namespace WinFormsHalloweenProject
             //public static implicit operator Rectangle(RECT rect) => rect.ToRectangle();
         }
 
-        [DllImport("user32.dll")]
-        private static extern IntPtr FindWindowEx(IntPtr parentHandle,
-                                          IntPtr hwndChildAfer,
-                                          IntPtr className,
-                                          [MarshalAs(UnmanagedType.LPStr)] string windowTitle);
+        //[DllImport("user32.dll")]
+        //private static extern IntPtr FindWindowEx(IntPtr parentHandle,
+        //                                  IntPtr hwndChildAfer,
+        //                                  IntPtr className,
+        //                                  [MarshalAs(UnmanagedType.LPStr)] string windowTitle);
 
 
         [DllImport("user32.dll")]
@@ -207,13 +207,13 @@ namespace WinFormsHalloweenProject
 
             //ShowInTaskbar = false;
             graph = new Graph(Screen.PrimaryScreen.Bounds, new System.Numerics.Vector2(TrueBounds.Width, TrueBounds.Height));
-     
+
         }
 
         void CreateParticle()
         {
             Thread.Sleep(spawnDelay += 175);
-    
+
             Particle particle = new Particle();
             Particles[particleIndex++] = particle;
             SetParticle(particle);
@@ -244,7 +244,7 @@ namespace WinFormsHalloweenProject
             Tintmap particleKey = (particlesTextures.RandomValue(), tints.RandomValue());
             try
             {
-               
+
                 Color chosenTint = particleKey.Item2;
                 if (!particleCache.TryGetValue(particleKey, out var particleTexture))
                 {
@@ -297,7 +297,7 @@ namespace WinFormsHalloweenProject
             shake = new Size(rand.NextError(degree), rand.NextError(degree));
             lerpPercent += rand.NextError(lerpIncrement);
             lerpPercent = Math.Clamp(lerpPercent, 0, 1);
-            Opacity = 1d.Lerp(0, lerpPercent);               
+            Opacity = 1d.Lerp(0, lerpPercent);
             if (!particlesKnow)
             {
                 particlesKnow = true;
@@ -343,7 +343,7 @@ namespace WinFormsHalloweenProject
             {
                 bool isParticle = false;
                 bool isGhost = false;
-                foreach(IntPtr particle in particleHandles)
+                foreach (IntPtr particle in particleHandles)
                 {
                     if (windowHandles[i] == particle)
                     {
@@ -351,18 +351,14 @@ namespace WinFormsHalloweenProject
                         break;
                     }
                 }
-                if(!isParticle)
+                if (!isParticle)
                 {
-                    foreach(IntPtr ghost in ghostHandles)
+                    foreach (IntPtr ghost in ghostHandles)
                     {
                         if (windowHandles[i] == ghost)
                         {
                             isGhost = true;
                             break;
-                        }
-                        if (!isParticle)
-                        {
-                            CurrentWindows.Add(temp);
                         }
                     }
                 }
@@ -395,7 +391,7 @@ namespace WinFormsHalloweenProject
             }
             if (diff | PreviousWindows.Count > 0)
             {
-                CurrentPath = graph.GetPath(CurrentWindows, TrueBounds.GetCenter());
+                CurrentPath = graph.GetPath(CurrentWindows, TrueBounds.GetCenter(), out var noPath);
             }
             MovementVector = oldLocation - (Size)Location;
             oldLocation = (Size)Location;
@@ -494,39 +490,39 @@ namespace WinFormsHalloweenProject
         public List<IntPtr> GetGhostHandles() => GetWindowHandles("Form1");
 
     }
-    static class Extensions
-    {
-        public static int NextError(this Random rand, int degree) => rand.Next(-degree, degree + 1);
+    //static class Extensions
+    //{
+    //    public static int NextError(this Random rand, int degree) => rand.Next(-degree, degree + 1);
 
-        public static double NextError(this Random rand, double degree) => rand.NextDouble() * degree * (rand.Next(0, 2) * 2 - 1);
+    //    public static double NextError(this Random rand, double degree) => rand.NextDouble() * degree * (rand.Next(0, 2) * 2 - 1);
 
-        public static double Lerp(this double a, double b, double percent) => b * percent + a * (1 - percent);
+    //    public static double Lerp(this double a, double b, double percent) => b * percent + a * (1 - percent);
 
-        public static RECT ToRECT(this Rectangle rect)
-        {
-            RECT returnRect = new RECT();
-            returnRect.Left = rect.Left;
-            returnRect.Top = rect.Top; ;
-            returnRect.Right = rect.Right;
-            returnRect.Bottom = rect.Bottom;
-            return returnRect;
-        }
+    //    public static RECT ToRECT(this Rectangle rect)
+    //    {
+    //        RECT returnRect = new RECT();
+    //        returnRect.Left = rect.Left;
+    //        returnRect.Top = rect.Top; ;
+    //        returnRect.Right = rect.Right;
+    //        returnRect.Bottom = rect.Bottom;
+    //        return returnRect;
+    //    }
 
-        public static Point GetCenter(this Rectangle targetRectangle)
-        {
-            return new Point(targetRectangle.Left + targetRectangle.Width / 2, targetRectangle.Top + targetRectangle.Height / 2);
-        }
+    //    public static Point GetCenter(this Rectangle targetRectangle)
+    //    {
+    //        return new Point(targetRectangle.Left + targetRectangle.Width / 2, targetRectangle.Top + targetRectangle.Height / 2);
+    //    }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="a"></param>
-        /// <param name="b"></param>
-        /// <param name="percent">0 - 100</param>
-        /// <returns></returns>
-        public static int Lerp(this int a, int b, int percent) => (a * percent + b * (100 - percent)) / 100;
-        public static T RandomValue<T>(this T[] data) => data[Form1.rand.Next(data.Length)];
+    //    /// <summary>
+    //    /// 
+    //    /// </summary>
+    //    /// <param name="a"></param>
+    //    /// <param name="b"></param>
+    //    /// <param name="percent">0 - 100</param>
+    //    /// <returns></returns>
+    //    public static int Lerp(this int a, int b, int percent) => (a * percent + b * (100 - percent)) / 100;
+    //    public static T RandomValue<T>(this T[] data) => data[Form1.rand.Next(data.Length)];
 
 
-    }
+    //}
 }
