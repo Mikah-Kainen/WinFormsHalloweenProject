@@ -588,6 +588,14 @@ namespace WinFormsHalloweenProject
         //    return new Rectangle((Point)(((Size)TrueBounds.Location) - new Size(leftOffset, topOffset) + shake + speeds), Bounds.Size);
         //}
         #endregion
+
+        private new Rectangle Wander(int deltaX, int deltaY)
+        {
+            Rectangle tentativeRectangle = new Rectangle(TrueBounds.Location.X + deltaX, TrueBounds.Location.Y + deltaY, TrueBounds.Width, TrueBounds.Height);
+            foreach (RECT rect in CurrentWindows)
+            { 
+            }
+        }
         public Point Declamp(Point val, int xMin, int xMax, int yMin, int yMax)
         {
             Point returnVal = val;

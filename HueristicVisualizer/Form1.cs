@@ -144,8 +144,8 @@ namespace Rectangle_Hueristic
             else if (e.Button == MouseButtons.Left)
             {
                 HashSet<RECT> dumberRects = rects.Select(m => m.ToRECT()).ToHashSet();
-                var points = graph.GetPath(dumberRects, e.Location, out var noPath);                
-                if (!noPath)
+                var points = graph.GetPath(dumberRects, e.Location, out var noPath, out var temp);
+                if (noPath != PathStatus.NoPath)
                 {
 
                     Point oldPoint = Point.Empty;
