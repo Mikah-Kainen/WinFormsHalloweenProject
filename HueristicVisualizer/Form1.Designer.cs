@@ -41,6 +41,10 @@
             this.FadeTimer = new System.Windows.Forms.Timer(this.components);
             this.canvasBox = new System.Windows.Forms.PictureBox();
             this.Recycle = new System.Windows.Forms.Button();
+            this.Clear = new System.Windows.Forms.Button();
+            this.aspectRatioBox = new System.Windows.Forms.TextBox();
+            this.label1 = new System.Windows.Forms.Label();
+            this.BestRectLabel = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.canvasBox)).BeginInit();
             this.SuspendLayout();
             // 
@@ -130,7 +134,7 @@
             this.canvasBox.Name = "canvasBox";
             this.canvasBox.Size = new System.Drawing.Size(1068, 603);
             this.canvasBox.TabIndex = 10;
-            this.canvasBox.TabStop = false;            
+            this.canvasBox.TabStop = false;
             this.canvasBox.MouseClick += new System.Windows.Forms.MouseEventHandler(this.canvasBox_MouseClick);
             // 
             // Recycle
@@ -141,13 +145,57 @@
             this.Recycle.TabIndex = 11;
             this.Recycle.Text = "Recycle";
             this.Recycle.UseVisualStyleBackColor = true;
-            this.Recycle.Click += Calculate;
+            // 
+            // Clear
+            // 
+            this.Clear.Location = new System.Drawing.Point(952, 214);
+            this.Clear.Name = "Clear";
+            this.Clear.Size = new System.Drawing.Size(94, 29);
+            this.Clear.TabIndex = 12;
+            this.Clear.Text = "Clear";
+            this.Clear.UseVisualStyleBackColor = true;
+            this.Clear.Click += new System.EventHandler(this.Clear_Click);
+            // 
+            // aspectRatioBox
+            // 
+            this.aspectRatioBox.Location = new System.Drawing.Point(931, 249);
+            this.aspectRatioBox.Name = "aspectRatioBox";
+            this.aspectRatioBox.Size = new System.Drawing.Size(125, 27);
+            this.aspectRatioBox.TabIndex = 13;
+            this.aspectRatioBox.Text = "1 : 1";
+            this.aspectRatioBox.KeyDown += new System.Windows.Forms.KeyEventHandler(this.textBox1_KeyDown);
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(837, 252);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(89, 20);
+            this.label1.TabIndex = 14;
+            this.label1.Text = "AspectRatio";
+            // 
+            // BestRectLabel
+            // 
+            this.BestRectLabel.AutoSize = true;
+            this.BestRectLabel.BackColor = System.Drawing.Color.CornflowerBlue;
+            this.BestRectLabel.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
+            this.BestRectLabel.ForeColor = System.Drawing.Color.Snow;
+            this.BestRectLabel.Location = new System.Drawing.Point(363, 118);
+            this.BestRectLabel.Name = "BestRectLabel";
+            this.BestRectLabel.Size = new System.Drawing.Size(51, 20);
+            this.BestRectLabel.TabIndex = 15;
+            this.BestRectLabel.Text = "label2";
+            this.BestRectLabel.Visible = false;
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1068, 603);
+            this.Controls.Add(this.BestRectLabel);
+            this.Controls.Add(this.label1);
+            this.Controls.Add(this.aspectRatioBox);
+            this.Controls.Add(this.Clear);
             this.Controls.Add(this.Recycle);
             this.Controls.Add(this.Add);
             this.Controls.Add(this.HeightBox);
@@ -182,5 +230,9 @@
         private System.Windows.Forms.Timer FadeTimer;
         private PictureBox canvasBox;
         private Button Recycle;
+        private Button Clear;
+        private TextBox aspectRatioBox;
+        private Label label1;
+        private Label BestRectLabel;
     }
 }

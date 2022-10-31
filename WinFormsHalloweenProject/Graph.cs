@@ -7,28 +7,34 @@ using System.Reflection.Metadata.Ecma335;
 using System.Security.Cryptography.Xml;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms.VisualStyles;
 using System.Xml.Linq;
 
 
 namespace WinFormsHalloweenProject
 {
     using static Pain;
+
     public partial class Graph
     {
         public static double DistanceFunc(Point start, Point end)
         {
-            return Math.Sqrt((end.X - start.X) * (end.X - start.X) + (end.Y - start.Y) * (end.Y - start.Y));
+            return Math.Sqrt(0 *( (end.X - start.X) * (end.X - start.X) + (end.Y - start.Y) * (end.Y - start.Y)));
         }
 
         private List<Node> Nodes = new List<Node>();
         Rectangle Screen;
+        double screenSize;
         Vector2 aspectRatio;
+        public Vector2 AspectRatio
+        { get => aspectRatio; set => screenSize = GetRectSize(Screen, RectangleComparer.Instance.AspectRatio = aspectRatio = value); }
         public int XOffset => Screen.X;
         public int YOffset => Screen.Y;
         public Graph(Rectangle screen, Vector2 aspectRatio)
         {
-            this.aspectRatio = aspectRatio;
+         
             Screen = screen;
+            AspectRatio = aspectRatio;
             Nodes = new List<Node>();
 
             //List<Node> path = AStar(null, null, DistanceFunc);
@@ -42,65 +48,78 @@ namespace WinFormsHalloweenProject
             //then add path width detection
         }
 
-        public Point[] GetPath(HashSet<Ghost.RECT> rectangles, Point ghostLocation)
+        Node SetupNodes(HashSet<Ghost.RECT> rectangles, Point ghostLocation)
         {
             Nodes.Clear();
 
             Func<Ghost.RECT, Ghost.RECT, bool>[] CheckIntersections =
             {
                 (rect, scaledRect) => rect.Left <= scaledRect.Right & rect.Left >= scaledRect.Left & (rect.Top <= scaledRect.Bottom & rect.Bottom >= scaledRect.Top), //scaledRect blocks the left
-                (rect, scaledRect) => rect.Top <= scaledRect.Bottom & rect.Top >= scaledRect.Top & (rect.Left <= scaledRect.Right & rect.Right >= rect.Left), //scaledRect blocks the top
+                (rect, scaledRect) => rect.Top <= scaledRect.Bottom & rect.Top >= scaledRect.Top & (rect.Left <= scaledRect.Right & rect.Right >= scaledRect.Left), //scaledRect blocks the top
                 (rect, scaledRect) => rect.Right >= scaledRect.Left & rect.Right <= scaledRect.Right & (rect.Top <= scaledRect.Bottom & rect.Bottom >= scaledRect.Top), //scaledRect blocks the right
-                (rect, scaledRect) => rect.Bottom >= scaledRect.Top & rect.Bottom <= scaledRect.Bottom & (rect.Left <= scaledRect.Right & rect.Right >= rect.Left), //scaledRect blocks the bottom
+                (rect, scaledRect) => rect.Bottom >= scaledRect.Top & rect.Bottom <= scaledRect.Bottom & (rect.Left <= scaledRect.Right & rect.Right >= scaledRect.Left), //scaledRect blocks the bottom
             };
 
-            Node[] nodes = new Node[4]; //topLeft, topRight, bottomRight, bottomLeft
+            Node?[] sideNodes
+                = new Node[4]; //topLeft, topRight, bottomRight, bottomLeft
             foreach (Ghost.RECT rect in rectangles)
             {
-                nodes[0] = new Node(new Point(rect.Left, rect.Top), this);
-                nodes[1] = new Node(new Point(rect.Right, rect.Top), this);
-                nodes[2] = new Node(new Point(rect.Right, rect.Bottom), this);
-                nodes[3] = new Node(new Point(rect.Left, rect.Bottom), this);
+                var topLeft = new Point(rect.Left, rect.Top);
+                var topRight = new Point(rect.Right, rect.Top);
+                var bottomRight = new Point(rect.Right, rect.Bottom);
+                var bottomLeft = new Point(rect.Left, rect.Bottom);
+
+
+                sideNodes[0] = Screen.GenerousContains(topLeft) ? new Node(new Point(rect.Left, rect.Top), this) : null;
+                sideNodes[1] = Screen.GenerousContains(topRight) ? new Node(new Point(rect.Right, rect.Top), this) : null;
+                sideNodes[2] = Screen.GenerousContains(bottomRight) ? new Node(new Point(rect.Right, rect.Bottom), this) : null;
+                sideNodes[3] = Screen.GenerousContains(bottomLeft) ? new Node(new Point(rect.Left, rect.Bottom), this) : null;
+
                 foreach (Ghost.RECT otherRect in rectangles)
                 {
                     if (rect.Equals(otherRect)) continue;
-                    for (int i = 0; i < nodes.Length; i++)
+                    for (int i = 0; i < sideNodes.Length; i++)
                     {
-                        if (nodes[i] != null && otherRect.ToRectangle().Contains(nodes[i].Location))
+                        if (sideNodes[i] != null && otherRect.Pad(1).Contains(sideNodes[i].Location))
                         {
-                            nodes[i] = null;
+                            sideNodes[i] = null;
                         }
                     }
                 }
 
-                int previousIndex = nodes.Length - 1;
-                bool previousResult = nodes[previousIndex] != null;
-                for (int i = 0; i < nodes.Length; i++)
+                int previousIndex = sideNodes.Length - 1;
+                bool previousResult = sideNodes[previousIndex] != null;
+                for (int i = 0; i < sideNodes.Length; i++)
                 {
                     bool doesCurrentNodeExist = false;
-                    if (nodes[i] != null)
+                    if (sideNodes[i] != null)
                     {
-                        Nodes.Add(nodes[i]);
+                        Nodes.Add(sideNodes[i]);
                         doesCurrentNodeExist = true;
-                    }
-                    if (previousResult & doesCurrentNodeExist)
-                    {
-                        bool doesIntersect = false;
-                        foreach (Ghost.RECT rectForScale in rectangles)
+
+                        if (previousResult)
                         {
-                            if (rect.Equals(rectForScale)) continue;
-                            Ghost.RECT scaledRect = new Ghost.RECT(rectForScale.Left - 1, rectForScale.Top - 1, rectForScale.Right + 1, rectForScale.Bottom + 1);
-                            doesIntersect = CheckIntersections[i](rect, scaledRect);
-                            if (doesIntersect)
+                            bool doesIntersect = false;
+                            if (Screen.MoneyGrubbingContains(sideNodes[i].Location) || Screen.MoneyGrubbingContains(sideNodes[previousIndex].Location))
                             {
-                                break;
+                                foreach (Ghost.RECT rectForScale in rectangles)
+                                {
+                                    if (rect.Equals(rectForScale)) continue;
+                                    Ghost.RECT scaledRect = new Ghost.RECT(rectForScale.Left - 1, rectForScale.Top - 1, rectForScale.Right + 1, rectForScale.Bottom + 1);
+                                    doesIntersect = CheckIntersections[i](rect, scaledRect);
+                                    if (doesIntersect)
+                                    {
+                                        break;
+                                    }
+                                }
+                                if (!doesIntersect)
+                                {
+                                    AddEdge(sideNodes[previousIndex], sideNodes[i]);
+                                }
                             }
                         }
-                        if (!doesIntersect)
-                        {
-                            AddEdge(nodes[previousIndex], nodes[i]);
-                        }
                     }
+
                     previousResult = doesCurrentNodeExist;
                     previousIndex = i;
                 }
@@ -108,10 +127,28 @@ namespace WinFormsHalloweenProject
 
             Node startNode = new Node(ghostLocation, this);
             Nodes.Add(startNode);
+            return startNode;
+        }
 
+        public Point[] GetPath(HashSet<Ghost.RECT> rectangles, Point ghostLocation, out bool noPath)
+        {
+            foreach (var rect in rectangles)
+            {
+                if (rect.Contains(ghostLocation))
+                {
+                    noPath = true;
+                    return null;
+                }
+            }
+
+
+
+            Node startNode = SetupNodes(rectangles, ghostLocation);
+            RectangleComparer.Instance.Start = new Vector2(startNode.Location.X, startNode.Location.Y);
             LinkedList<Rectangle> biggestRectangles = Pain.FindBiggestSpace(rectangles.ToRectangles(), Screen.Size);
             //dont forget that if the ghost is already in the biggest rectangle it needs to bounce around
             Node endNode = null;
+            
             if (biggestRectangles.Count > 0)
             {
                 endNode = new Node(biggestRectangles.First().GetCenter(), this);
@@ -119,27 +156,59 @@ namespace WinFormsHalloweenProject
             }
             else
             {
-                //set the ghost to bounce around if there are no other rectangles
+                noPath = true;
+                return default;
             }
 
             for (int currentNodeIndex = 0; currentNodeIndex < Nodes.Count; currentNodeIndex++)
             {
                 for (int compareNodeIndex = currentNodeIndex + 1; compareNodeIndex < Nodes.Count; compareNodeIndex++)
                 {
+                    #region mikah idk
 
                     //if (Nodes[currentNodeIndex] == startNode || Nodes[compareNodeIndex] == startNode)
                     //{
 
                     //}
-
+                    #endregion
                     if (!AreConnected(Nodes[currentNodeIndex], Nodes[compareNodeIndex]) && InLineOfSight(Nodes[currentNodeIndex], Nodes[compareNodeIndex], rectangles))
                     {
                         AddEdge(Nodes[currentNodeIndex], Nodes[compareNodeIndex]);
                     }
                 }
             }
+            List<Node> nodePath;
+            LinkedListNode<Rectangle> curr = biggestRectangles.First;
+            while (true)
+            {
+                nodePath = AStar(startNode, endNode, DistanceFunc, biggestRectangles);
+                if (nodePath.Count > 0) break;
 
-            List<Node> nodePath = AStar(startNode, endNode, DistanceFunc, biggestRectangles);
+                curr = curr.Next;
+                if (curr == null)
+                {
+                    noPath = true;
+                    return null;
+                }
+                RemoveNode(endNode);
+                endNode = new Node(curr.Value.GetCenter(), this);
+                Nodes.Add(endNode);
+
+                foreach (var node in Nodes)
+                {
+                    node.Reset();
+                }
+                startNode.KnownDistance = 0;
+
+                foreach (var otherNode in Nodes)
+                {
+                    if (!AreConnected(endNode, otherNode) && InLineOfSight(endNode, otherNode, rectangles))
+                    {
+                        AddEdge(endNode, otherNode);
+                    }
+                }
+
+            }
             Point[] pointPath = new Point[nodePath.Count];
             int index = 0;
             foreach (Node node in nodePath)
@@ -147,6 +216,7 @@ namespace WinFormsHalloweenProject
                 pointPath[index] = node.Location;
                 index++;
             }
+            noPath = false;
             return pointPath;
         }
 
@@ -187,6 +257,21 @@ namespace WinFormsHalloweenProject
                     return;
                 }
             }
+        }
+        private void RemoveNode(Node node)
+        {
+            foreach (var edge in node.Edges)
+            {
+                if (edge.NodeB != node)
+                {
+                    edge.NodeB.Edges.Remove(edge);
+                }
+                else
+                {
+                    edge.NodeA.Edges.Remove(edge);
+                }
+            }
+            Nodes.Remove(node);
         }
 
 
@@ -339,15 +424,16 @@ namespace WinFormsHalloweenProject
                 for (int i = 0; i < currentNode.Edges.Count; i++)
                 {
                     Node neighborNode = currentNode.Edges[i].NodeA == currentNode ? currentNode.Edges[i].NodeB : currentNode.Edges[i].NodeA;
-
+                    var neighborEdge = currentNode.Edges[i];
                     if (!currentNode.Edges[i].SizeSet)
                     {
                         currentNode.Edges[i].SetSize(biggestRectangles);
                     }
-                    if (currentNode.KnownDistance + currentNode.Edges[i].Weight < neighborNode.KnownDistance)
+                    var tentativeDistance = currentNode.KnownDistance + currentNode.Edges[i].Weight;
+                    if (tentativeDistance < neighborNode.KnownDistance)
                     {
                         neighborNode.Founder = currentNode;
-                        neighborNode.KnownDistance = currentNode.KnownDistance + currentNode.Edges[i].Weight;
+                        neighborNode.KnownDistance = tentativeDistance;
                         queue.Enqueue(neighborNode);
                     }
                 }
@@ -390,17 +476,21 @@ namespace WinFormsHalloweenProject
             double yValue;
             Point currentPoint;
 
+            bool straight = pointA.X == pointB.X | pointA.Y == pointB.Y;
+
             while (currentPercent < 1)
-            {
+            {                
                 xValue = ((double)pointA.X).Lerp(pointB.X, currentPercent) + .99999;
                 yValue = ((double)pointA.Y).Lerp(pointB.Y, currentPercent) + .99999;
 
                 currentPercent += percentIncrement;
 
                 currentPoint = new Point((int)xValue, (int)yValue);
+                int generousContainment = 0;
                 foreach (Ghost.RECT rect in activeRectangles)
                 {
-                    if (rect.Contains(currentPoint))
+                    generousContainment += rect.Pad(1).GenerousContains(currentPoint).ToByte();
+                    if ((straight.ToByte() + generousContainment > 1 || rect.Contains(currentPoint)))
                     {
                         return false;
                     }

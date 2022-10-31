@@ -200,13 +200,13 @@ namespace WinFormsHalloweenProject
 
             //ShowInTaskbar = false;
             graph = new Graph(Screen.PrimaryScreen.Bounds, new System.Numerics.Vector2(TrueBounds.Width, TrueBounds.Height));
-     
+
         }
 
         void CreateParticle()
         {
             Thread.Sleep(spawnDelay += 175);
-    
+
             Particle particle = new Particle();
             Particles[particleIndex++] = particle;
             SetParticle(particle);
@@ -237,7 +237,7 @@ namespace WinFormsHalloweenProject
             Tintmap particleKey = (particlesTextures.RandomValue(), tints.RandomValue());
             try
             {
-               
+
                 Color chosenTint = particleKey.Item2;
                 if (!particleCache.TryGetValue(particleKey, out var particleTexture))
                 {
@@ -305,7 +305,7 @@ namespace WinFormsHalloweenProject
             //shake = new Size(rand.NextError(degree), rand.NextError(degree));
             lerpPercent += rand.NextError(lerpIncrement);
             lerpPercent = Math.Clamp(lerpPercent, 0, 1);
-            Opacity = 1d.Lerp(0, lerpPercent);               
+            Opacity = 1d.Lerp(0, lerpPercent);
             if (!particlesKnow)
             {
                 particlesKnow = true;
@@ -332,7 +332,7 @@ namespace WinFormsHalloweenProject
             {
                 bool isParticle = false;
                 bool isGhost = false;
-                foreach(IntPtr particle in particleHandles)
+                foreach (IntPtr particle in particleHandles)
                 {
                     if (windowHandles[i] == particle)
                     {
@@ -340,9 +340,9 @@ namespace WinFormsHalloweenProject
                         break;
                     }
                 }
-                if(!isParticle)
+                if (!isParticle)
                 {
-                    foreach(IntPtr ghost in ghostHandles)
+                    foreach (IntPtr ghost in ghostHandles)
                     {
                         if (windowHandles[i] == ghost)
                         {
