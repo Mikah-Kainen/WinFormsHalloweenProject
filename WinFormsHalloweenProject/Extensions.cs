@@ -13,7 +13,7 @@ namespace WinFormsHalloweenProject
     public static class Extensions
     {        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Point Lerp(this Point a, Point b, int percent) => new Point(a.X.Lerp(b.X, percent), a.Y.Lerp(b.Y, percent));
+        public static Point Lerp(this Point a, Point b, double percent) => new Point(a.X.Lerp(b.X, percent), a.Y.Lerp(b.Y, percent));
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe byte ToByte(this bool val) => ToByte(&val);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -43,7 +43,10 @@ namespace WinFormsHalloweenProject
             return new Point(targetRectangle.Left + targetRectangle.Width / 2, targetRectangle.Top + targetRectangle.Height / 2);
         }
 
+        public static bool GenerousContains(this Rectangle rect, Point target) => target.X >= rect.Left & target.X <= rect.Right & target.Y >= rect.Top & target.Y <= rect.Bottom;
+        public static bool MoneyGrubbingContains(this Rectangle rect, Point target) => target.X > rect.Left & target.X < rect.Right & target.Y > rect.Top & target.Y < rect.Bottom;       
         public static bool Contains(this RECT rect, RECT targetRect) => targetRect.Left >= rect.Left & targetRect.Right <= rect.Right & targetRect.Top >= rect.Top & targetRect.Bottom <= rect.Bottom;
+        public static bool GenerousContains(this RECT rect, Point targetPoint) => rect.Left <= targetPoint.X & rect.Right >= targetPoint.X & rect.Top <= targetPoint.Y & rect.Bottom >= targetPoint.Y;
         public static RECT Pad(this RECT rect, int pad) => rect.Pad(pad, pad, pad, pad);
         public static RECT Pad(this RECT rect, int xPad, int yPad) => rect.Pad(xPad, yPad, xPad, yPad);
         public static RECT Pad(this RECT rect, int leftPad, int topPad, int rightPad, int bottomPad) => new RECT(rect.Left - leftPad, rect.Top - topPad, rect.Right + rightPad, rect.Bottom + bottomPad);
@@ -69,7 +72,7 @@ namespace WinFormsHalloweenProject
         /// <param name="b"></param>
         /// <param name="percent">0 - 100</param>
         /// <returns></returns>
-        public static int Lerp(this int a, int b, int percent) => (a * percent + b * (100 - percent)) / 100;
+        public static int Lerp(this int a, int b, double percent) => (int)Math.Round((a * percent + b * (1 - percent)));
         public static T RandomValue<T>(this T[] data) => data[Form1.rand.Next(data.Length)];
 
     }

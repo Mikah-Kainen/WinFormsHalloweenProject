@@ -8,19 +8,30 @@ using System.Threading.Tasks;
 
 namespace WinFormsHalloweenProject
 {
-    using RECT = Rectangle;   
+    using RECT = Rectangle;
+    using static Pain;
 
     class RectangleComparer : IComparer<RECT>
     {
+        class SadnessException : Exception
+        {
+            public SadnessException()
+                : base(":(") { }
+        }
+
+        public Vector2 Start { get; set; }
+        public Vector2 AspectRatio { get; set; } = Vector2.One;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int Compare(RECT x, RECT y)
         {
-            int yArea = y.Width * y.Height;
-            int xArea = x.Width * x.Height;
+            float xSize = GetRectSize(x, AspectRatio) + ((Vector2.Distance(new Vector2(x.Left + x.Width / 2, x.Top + x.Height / 2), Start) < Vector2.Distance(new Vector2(y.Left + y.Width / 2, y.Top + y.Height / 2), Start)).ToByte() * 2 - 1) / 2f;
+            float ySize = GetRectSize(y, AspectRatio);
 
-            byte a = (xArea < yArea).ToByte();
-            byte b = (xArea > yArea).ToByte();
+            //if (xSize == ySize) throw new SadnessException();
+
+            int a = (xSize < ySize).ToByte();
+            int b = (xSize > ySize).ToByte();
 
             return a - b;
         }
@@ -34,7 +45,7 @@ namespace WinFormsHalloweenProject
         public static LinkedList<RECT> FindBiggestSpace(HashSet<RECT> rectangles, Size bounds)
         {
             var comparer = RectangleComparer.Instance;
-            List<RECT> rects = rectangles.ToList<RECT>();
+            List<RECT> rects = rectangles.ToList();
             rects.Sort(comparer);
 
             LinkedList<RECT> spaces = new LinkedList<RECT>();
@@ -80,17 +91,17 @@ namespace WinFormsHalloweenProject
         /// <param name="biggestSize">Outputs the measurment of size for the chosen rectangle</param>
         /// <returns>The best suited rectangle</returns>
 
-        public static int GetRectSize(RECT rect, Vector2 aspectRatio) => (int)Math.Min(rect.Width * (1 / aspectRatio.X), rect.Height * (1 / aspectRatio.Y));
-        public static RECT GetBiggestRectangle(Point location, Vector2 aspectRatio, IEnumerable<RECT> rectangles, out int biggestSize)
+        public static float GetRectSize(RECT rect, Vector2 aspectRatio) => Math.Min(rect.Width * (1 / aspectRatio.X), rect.Height * (1 / aspectRatio.Y));
+        public static RECT GetBiggestRectangle(Point location, Vector2 aspectRatio, IEnumerable<RECT> rectangles, out float biggestSize)
         {
-            aspectRatio = aspectRatio / Math.Max(aspectRatio.X, aspectRatio.Y);
+            aspectRatio /= Math.Max(aspectRatio.X, aspectRatio.Y);
 
             RECT biggestRect = RECT.Empty;
             biggestSize = 0;
             foreach (var rect in rectangles)
             {
-                int newSize;// = Math.Min(rect.Width * aspectRatio.Width, rect.Height * aspectRatio.Height);
-                if (rect.Contains(location) && (newSize = GetRectSize(rect, aspectRatio)) > biggestSize)
+                float newSize;// = Math.Min(rect.Width * aspectRatio.Width, rect.Height * aspectRatio.Height);
+                if (rect.GenerousContains(location) && (newSize = GetRectSize(rect, aspectRatio)) > biggestSize)
                 {
                     biggestSize = newSize;
                     biggestRect = rect;

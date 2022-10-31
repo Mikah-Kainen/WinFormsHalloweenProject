@@ -1,14 +1,17 @@
 using Accessibility;
 
+using System.Net.Http.Headers;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
+using WinFormsHalloweenProject;
+
 namespace Rectangle_Hueristic
 {
+    using static WinFormsHalloweenProject.Pain;
 
-
-    using RECT = Rectangle;
-
+    //using RECT = Rectangle;
+    using RECT = WinFormsHalloweenProject.Form1.RECT;
 
     public partial class Form1 : Form
     {
@@ -25,8 +28,9 @@ namespace Rectangle_Hueristic
         Graphics gfx;
         TextBox[] boxes;
         Bitmap canvas;
-        HashSet<Rectangle> rects = new HashSet<RECT>();
-        LinkedList<RECT> spaces;
+        HashSet<Rectangle> rects = new HashSet<Rectangle>();
+        LinkedList<Rectangle> spaces;
+        Graph graph;
 #nullable disable
         public Form1()
         {
@@ -60,17 +64,18 @@ namespace Rectangle_Hueristic
                     return;
                 }
             }
-            RECT newRect = new RECT(boxVals[0], boxVals[1], boxVals[2], boxVals[3]);
+            Rectangle newRect = new Rectangle(boxVals[0], boxVals[1], boxVals[2], boxVals[3]);
             rects.Add(newRect);
             Calculate(sender, e);
             gfx.FillRectangle(Brushes.White, newRect);
-            foreach (var box in boxes) { box.Text = String.Empty; };
+            for (int i = 0; i < 4; i++) { boxes[i].Text = String.Empty; };
 
 
         }
         const int gridSize = 100;
         private void Calculate(object sender, EventArgs e)
         {
+            BestRectLabel.Visible = false;
             spaces = FindBiggestSpace(rects, canvas.Size);
 
             int i = spaces.Count - 1;
@@ -102,108 +107,19 @@ namespace Rectangle_Hueristic
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static LinkedList<RECT> FindBiggestSpace(HashSet<RECT> rectangles, Size bounds)
-        {
-            var comparer = RectangleComparer.Instance;
-            List<RECT> rects = rectangles.ToList<RECT>();
-            rects.Sort(comparer);
 
-            LinkedList<RECT> spaces = new LinkedList<RECT>();
-            spaces.AddFirst(new RECT(Point.Empty, bounds));
-
-
-            foreach (var rect in rects)
-            {
-                for (LinkedListNode<RECT> traveller = spaces.First, next; traveller != null; traveller = next)
-                {
-                    next = traveller.Next;
-                    var space = traveller.Value;
-                    if (rect.IntersectsWith(space))
-                    {
-                        spaces.Remove(traveller);
-                        if (rect.Left > space.Left)
-                        {
-                            InsertInto(spaces, new RECT(space.Left, space.Top, rect.Left - space.Left, space.Height));
-                        }
-                        if (rect.Right < space.Right)
-                        {
-                            InsertInto(spaces, new RECT(rect.Right, space.Top, space.Right - rect.Right, space.Height));
-                        }
-                        if (rect.Top > space.Top)
-                        {
-                            InsertInto(spaces, new RECT(space.Left, space.Top, space.Width, rect.Top - space.Top));
-                        }
-                        if (rect.Bottom < space.Bottom)
-                        {
-                            InsertInto(spaces, new RECT(space.Left, rect.Bottom, space.Width, space.Bottom - rect.Bottom));
-                        }
-                    }
-                }
-            }
-            return spaces;
-        }
-        /// <summary>
-        /// Finds the rectangle best suited to fit an item with a certain aspect ratio at some position
-        /// </summary>
-        /// <param name="location">The location to search from</param>
-        /// <param name="aspectRatio">The aspect ratio being searched for</param>
-        /// <param name="rectangles">The candidate rectangles</param>
-        /// <param name="biggestSize">Outputs the measurment of size for the chosen rectangle</param>
-        /// <returns>The best suited rectangle</returns>
-        static RECT GetBiggestRectangle(Point location, Vector2 aspectRatio, IEnumerable<RECT> rectangles, out int biggestSize)
-        {
-            aspectRatio = aspectRatio / Math.Max(aspectRatio.X, aspectRatio.Y);
-
-            RECT biggestRect = RECT.Empty;
-            biggestSize = 0;
-            foreach (var rect in rectangles)
-            {
-                int newSize;// = Math.Min(rect.Width * aspectRatio.Width, rect.Height * aspectRatio.Height);
-                if (rect.Contains(location) && (newSize = (int)Math.Min(rect.Width * (1 / aspectRatio.X), rect.Height * (1 / aspectRatio.Y))) > biggestSize)
-                {
-                    biggestSize = newSize;
-                    biggestRect = rect;
-                }
-            }
-            return biggestRect;
-        }
-        static bool InsertInto(LinkedList<RECT> rects, RECT newRect)
-        {
-            for (LinkedListNode<RECT> traveller = rects.First, next; traveller != null; traveller = next)
-            {
-                next = traveller.Next;
-                if (traveller.Value.Contains(newRect))
-                {
-                    return false;
-                }
-                if (RectangleComparer.Instance.Compare(traveller.Value, newRect) >= 0)
-                {
-                    rects.AddBefore(traveller, newRect);
-                    for (; traveller != null; traveller = next)
-                    {
-                        next = traveller.Next;
-                        if (newRect.Contains(traveller.Value))
-                        {
-                            rects.Remove(traveller);
-                        }
-                    }
-                    return true;
-                }
-            }
-            rects.AddLast(newRect);
-            return true;
-        }
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            boxes = new TextBox[] { XBox, YBox, WidthBox, HeightBox };
+            graph = new Graph(new Rectangle(Point.Empty, ClientSize), Vector2.One);
+            boxes = new TextBox[] { XBox, YBox, WidthBox, HeightBox, aspectRatioBox };
             foreach (var box in boxes) { box.KeyDown += TypeLetter; }
             canvas = new Bitmap(canvasBox.Width, canvasBox.Height);
             gfx = Graphics.FromImage(canvas);
-            spaces = new LinkedList<RECT>();
-            spaces.AddFirst(new RECT(Point.Empty, canvas.Size));
+            spaces = new LinkedList<Rectangle>();
+            spaces.AddFirst(new Rectangle(Point.Empty, canvas.Size));
             gfx.Clear(Color.Green);
+            Recycle.Click += Calculate;
             DrawGolf();
             canvasBox.Image = canvas;
         }
@@ -216,8 +132,65 @@ namespace Rectangle_Hueristic
 
         private void canvasBox_MouseClick(object sender, MouseEventArgs e)
         {
-            gfx.FillRectangle(Brushes.CornflowerBlue, GetBiggestRectangle(e.Location, new Vector2(1, 2), spaces, out _));
-            canvasBox.Image = canvas;
+            if (e.Button == MouseButtons.Right)
+            {
+                Rectangle bestRect = GetBiggestRectangle(e.Location, graph.AspectRatio, spaces, out var weight);
+                gfx.FillRectangle(Brushes.CornflowerBlue, bestRect);
+                BestRectLabel.Text = weight.ToString();
+                BestRectLabel.Location = new Point(bestRect.X + bestRect.Width / 2 - BestRectLabel.Width / 2, bestRect.Y + bestRect.Height / 2 - BestRectLabel.Height / 2);
+                BestRectLabel.Visible = true;
+                canvasBox.Image = canvas;
+            }
+            else if (e.Button == MouseButtons.Left)
+            {
+                HashSet<RECT> dumberRects = rects.Select(m => m.ToRECT()).ToHashSet();
+                var points = graph.GetPath(dumberRects, e.Location, out var noPath);                
+                if (!noPath)
+                {
+
+                    Point oldPoint = Point.Empty;
+                    foreach (var point in points)
+                    {
+                        gfx.FillEllipse(Brushes.Goldenrod, new Rectangle(point.X - 6, point.Y - 6, 12, 12));
+                        if (!oldPoint.IsEmpty)
+                        {
+                            gfx.DrawLine(Pens.Gold, new Point(oldPoint.X, oldPoint.Y - 1), new Point(point.X, point.Y - 1));
+                            gfx.DrawLine(Pens.Gold, new Point(oldPoint.X - 1, oldPoint.Y), new Point(point.X - 1, point.Y));
+                            gfx.DrawLine(Pens.Gold, new Point(oldPoint.X + 1, oldPoint.Y), new Point(point.X + 1, point.Y));
+                            gfx.DrawLine(Pens.Gold, new Point(oldPoint.X, oldPoint.Y + 1), new Point(point.X, point.Y + 1));
+                            gfx.DrawLine(Pens.DarkCyan, oldPoint, point);
+
+                            gfx.FillEllipse(Brushes.DarkCyan, new Rectangle(oldPoint.X - 5, oldPoint.Y - 5, 10, 10));
+                        }
+                        gfx.FillEllipse(Brushes.DarkCyan, new Rectangle(point.X - 5, point.Y - 5, 10, 10));
+                        oldPoint = point;
+                    }
+                }
+                //    gfx.FillEllipse(Brushes.Honeydew, new Rectangle(0, 0, 100, 100));
+                canvasBox.Image = canvas;
+            }
+        }
+
+        private void Clear_Click(object sender, EventArgs e)
+        {
+            rects.Clear();
+            Calculate(sender, e);
+        }
+
+        private void textBox1_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyData == Keys.Enter)
+            {
+                var vals = ((TextBox)sender).Text.Split(':', ' ').Where(m => m.Length != 0).ToArray();
+                if (vals.Length == 2 && float.TryParse(vals[0], out var x) && float.TryParse(vals[1], out var y))
+                {
+                    graph.AspectRatio = new Vector2(x, y);
+                    Calculate(sender, e);
+                    return;
+                }
+                foreach (var box in boxes) { box.BackColor = Color.Red; }
+                FadeTimer.Start();
+            }
         }
     }
 }
