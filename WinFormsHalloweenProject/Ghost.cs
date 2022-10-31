@@ -471,7 +471,7 @@ namespace WinFormsHalloweenProject
         public List<IntPtr> GetWindowHandles(string windowTitle)
         {
             List<IntPtr> windowHandles = new List<IntPtr>();
-            for (IntPtr currentWindow = IntPtr.Zero; (currentWindow = FindWindowEx(IntPtr.Zero, currentWindow, IntPtr.Zero, windowTitle)) != IntPtr.Zero;)
+            for (IntPtr currentWindow = IntPtr.Zero; (currentWindow = FindWindowEx(IntPtr.Zero, currentWindow, IntPtr.Zero, windowTitle)) != IntPtr.Zero;) //edden approved!
             {
                 windowHandles.Add(currentWindow);
             }
