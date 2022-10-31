@@ -1,15 +1,11 @@
-using Microsoft.VisualBasic;
 using System.Linq;
 using System.Collections;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using static WinFormsHalloweenProject.Form1;
 using WinformsHalloweenProject;
 using System.Drawing.Imaging;
-using System.Security.Cryptography.X509Certificates;
-using System.Diagnostics;
+using System.Windows.Forms.VisualStyles;
 
 namespace WinFormsHalloweenProject
 {
@@ -21,6 +17,9 @@ namespace WinFormsHalloweenProject
     {
         [DllImport("user32.dll")]
         static extern IntPtr GetForegroundWindow();
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr FindWindowEx(IntPtr parentHandle, IntPtr hwndChildAfer, IntPtr className, [MarshalAs(UnmanagedType.LPStr)] string windowTitle);
 
         [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -205,7 +204,6 @@ namespace WinFormsHalloweenProject
 
 
             Opacity = 50;
-            //ClientSize = BackgroundImage.Size;
 
             //ShowInTaskbar = false;
             graph = new Graph(Screen.PrimaryScreen.Bounds, new System.Numerics.Vector2(TrueBounds.Width, TrueBounds.Height));
@@ -299,8 +297,7 @@ namespace WinFormsHalloweenProject
             shake = new Size(rand.NextError(degree), rand.NextError(degree));
             lerpPercent += rand.NextError(lerpIncrement);
             lerpPercent = Math.Clamp(lerpPercent, 0, 1);
-            Opacity = 1d.Lerp(0, lerpPercent);
-                        
+            Opacity = 1d.Lerp(0, lerpPercent);               
             if (!particlesKnow)
             {
                 particlesKnow = true;
@@ -337,39 +334,31 @@ namespace WinFormsHalloweenProject
 
 
             IntPtr[] windowHandles = GetAllWindows();
+            List<IntPtr> particleHandles = GetParticleHandles();
+            List<IntPtr> ghostHandles = GetGhostHandles();
             HashSet<RECT> PreviousWindows = CurrentWindows;
             CurrentWindows = new HashSet<RECT>();
             int particleCount = 0;
             for (int i = 0; i < windowHandles.Length; i++)
             {
-                if (IsWindowVisible(windowHandles[i]))
+                bool isParticle = false;
+                bool isGhost = false;
+                foreach(IntPtr particle in particleHandles)
                 {
-                    RECT temp;
-                    GetWindowRect(new HandleRef(IntPtr.Zero, windowHandles[i]), out temp);
-                    int width = temp.Right - temp.Left;
-                    int height = temp.Bottom - temp.Top;
-                    bool isParticle = false;
-                    //foreach (Ghost ghost in Ghosts) // dont forget to add this once there are multiple ghosts
-                    //{
-                    if (width >= minWindowWidth & height >= minWindowHeight & width <= maxWindowWidth & height <= maxWindowHeight & temp.Left < Screen.PrimaryScreen.Bounds.Right & temp.Top < Screen.PrimaryScreen.Bounds.Bottom & temp.Right > Screen.PrimaryScreen.Bounds.Left & temp.Bottom > Screen.PrimaryScreen.Bounds.Top && !CurrentWindows.Contains(temp))
+                    if (windowHandles[i] == particle)
                     {
-                        IntPtr currentWindow = IntPtr.Zero;
-                        do
+                        isParticle = true;
+                        break;
+                    }
+                }
+                if(!isParticle)
+                {
+                    foreach(IntPtr ghost in ghostHandles)
+                    {
+                        if (windowHandles[i] == ghost)
                         {
-                            currentWindow = FindWindowEx(IntPtr.Zero, currentWindow, IntPtr.Zero, "GhostParticle");
-                        } while (currentWindow != IntPtr.Zero);
-                        foreach (Particle particle in Particles)
-                        {
-                            if (particle != null)
-                            {
-                                RECT scaledRect = particle.Bounds.ToRECT().Pad(particle.XSpeed * 5, particle.YSpeed * 5);
-                                if (scaledRect.Contains(temp))
-                                {
-                                    particleCount++;
-                                    isParticle = true;
-                                    break;
-                                }
-                            }
+                            isGhost = true;
+                            break;
                         }
                         if (!isParticle)
                         {
@@ -377,9 +366,20 @@ namespace WinFormsHalloweenProject
                         }
                     }
                 }
+                if ((!isParticle & !isGhost) && IsWindowVisible(windowHandles[i]))
+                {
+                    RECT temp;
+                    GetWindowRect(new HandleRef(IntPtr.Zero, windowHandles[i]), out temp);
+                    int width = temp.Right - temp.Left;
+                    int height = temp.Bottom - temp.Top;
+
+                    if (!isParticle & width >= minWindowWidth & height >= minWindowHeight & width <= maxWindowWidth & height <= maxWindowHeight & temp.Left < Screen.PrimaryScreen.Bounds.Right & temp.Top < Screen.PrimaryScreen.Bounds.Bottom & temp.Right > Screen.PrimaryScreen.Bounds.Left & temp.Bottom > Screen.PrimaryScreen.Bounds.Top && !CurrentWindows.Contains(temp))
+                    {
+                        CurrentWindows.Add(temp);
+                    }
+                }
                 //}                
             }
-            CurrentWindows.Remove(Bounds.ToRECT());
             bool diff = false;
             foreach (RECT rect in CurrentWindows)
             {
@@ -401,9 +401,6 @@ namespace WinFormsHalloweenProject
             oldLocation = (Size)Location;
 
             Point newPosition;
-            //Point newBounds = Declamp(TrueBounds.Location, currentWindow.Left - TrueBounds.Width, currentWindow.Right, currentWindow.Top - TrueBounds.Height, currentWindow.Bottom);
-            //Point newBounds = new Point(TrueBounds.X, TrueBounds.Y);
-            //Point newBounds = CurrentPath[1];
             if (CurrentPath.Count() > 1)
             {
                 double distance = Distance(TrueBounds.Location, CurrentPath[1]);
@@ -483,34 +480,53 @@ namespace WinFormsHalloweenProject
         }
         public static double Distance(Point A, Point B) => Math.Sqrt((B.X - A.X) * (B.X - A.X) + (B.Y - A.Y) * (B.Y - A.Y));
 
-        Process[] oldProcesses = new Process[0];
-        Process[] currentProcesses = new Process[0];
-
-        private void DebugTimer_Tick(object sender, EventArgs e)
+        public List<IntPtr> GetWindowHandles(string windowTitle)
         {
-            //List<Process> processDelta = new List<Process>();
-            //oldProcesses = currentProcesses;
-            //currentProcesses = Process.GetProcesses();
-            //foreach(Process currentProcess in currentProcesses)
-            //{
-            //    bool wasFound = false;
-            //    foreach (Process oldProcess in oldProcesses)
-            //    {
-            //        if(currentProcess == oldProcess)
-            //        {
-            //            wasFound = true;
-            //        }
-            //    }
-            //    if(!wasFound)
-            //    {
-            //        processDelta.Add(currentProcess);
-            //    }
-            //}
-            //if(processDelta.Count > 0)
-            //{
-
-            //}
-            Process targetProcess = Process.GetProcessesByName("WinformsHalloweenProject").FirstOrDefault();
+            List<IntPtr> windowHandles = new List<IntPtr>();
+            for (IntPtr currentWindow = IntPtr.Zero; (currentWindow = FindWindowEx(IntPtr.Zero, currentWindow, IntPtr.Zero, windowTitle)) != IntPtr.Zero;)
+            {
+                windowHandles.Add(currentWindow);
+            }
+            return windowHandles;
         }
-    }    
+        public List<IntPtr> GetParticleHandles() => GetWindowHandles("Particle");
+
+        public List<IntPtr> GetGhostHandles() => GetWindowHandles("Form1");
+
+    }
+    static class Extensions
+    {
+        public static int NextError(this Random rand, int degree) => rand.Next(-degree, degree + 1);
+
+        public static double NextError(this Random rand, double degree) => rand.NextDouble() * degree * (rand.Next(0, 2) * 2 - 1);
+
+        public static double Lerp(this double a, double b, double percent) => b * percent + a * (1 - percent);
+
+        public static RECT ToRECT(this Rectangle rect)
+        {
+            RECT returnRect = new RECT();
+            returnRect.Left = rect.Left;
+            returnRect.Top = rect.Top; ;
+            returnRect.Right = rect.Right;
+            returnRect.Bottom = rect.Bottom;
+            return returnRect;
+        }
+
+        public static Point GetCenter(this Rectangle targetRectangle)
+        {
+            return new Point(targetRectangle.Left + targetRectangle.Width / 2, targetRectangle.Top + targetRectangle.Height / 2);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <param name="percent">0 - 100</param>
+        /// <returns></returns>
+        public static int Lerp(this int a, int b, int percent) => (a * percent + b * (100 - percent)) / 100;
+        public static T RandomValue<T>(this T[] data) => data[Form1.rand.Next(data.Length)];
+
+
+    }
 }
