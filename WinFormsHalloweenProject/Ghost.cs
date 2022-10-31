@@ -379,7 +379,7 @@ namespace WinFormsHalloweenProject
             }
             if (diff | PreviousWindows.Count > 0)
             {
-                CurrentPath = graph.GetPath(CurrentWindows, TrueBounds.GetCenter());
+                CurrentPath = graph.GetPath(CurrentWindows, TrueBounds.GetCenter(), out var noPath);
             }
             MovementVector = oldLocation - (Size)Location;
             oldLocation = (Size)Location;
