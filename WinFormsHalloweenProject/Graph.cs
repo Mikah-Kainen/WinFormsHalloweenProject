@@ -137,11 +137,11 @@ namespace WinFormsHalloweenProject
             return startNode;
         }
 
-        public Point[] GetPath(HashSet<Ghost.RECT> rectangles, Point ghostLocation, out PathStatus result, out Rectangle endGoal)
+        public Point[] GetPath(HashSet<Ghost.RECT> rectangles, Point ghostLocation, out PathStatus result, out Rectangle endGoal, out LinkedList<Rectangle> biggestRectangles)
         {
             Node startNode = SetupNodes(rectangles, ghostLocation);
             RectangleComparer.Instance.Start = new Vector2(startNode.Location.X, startNode.Location.Y);
-            LinkedList<Rectangle> biggestRectangles = Pain.FindBiggestSpace(rectangles.ToRectangles(), Screen.Size);
+            biggestRectangles = Pain.FindBiggestSpace(rectangles.ToRectangles(), Screen.Size);
             //dont forget that if the ghost is already in the biggest rectangle it needs to bounce around
             Node endNode = null;
             

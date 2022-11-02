@@ -8,6 +8,7 @@ using System.Drawing.Imaging;
 using System.Windows.Forms.VisualStyles;
 using System.Diagnostics;
 using System.Text;
+using System.Numerics;
 
 namespace WinFormsHalloweenProject
 {
@@ -172,7 +173,18 @@ namespace WinFormsHalloweenProject
         const int topOffset = 65;
         const int bottomOffset = 7;
 
-        Rectangle TrueBounds => new Rectangle(Bounds.X + leftOffset, Bounds.Y + topOffset, Bounds.Width - leftOffset - rightOffset, Bounds.Height - topOffset - bottomOffset);
+        Vector2 startingBounds;
+        Vector2 scale = Vector2.One;
+
+        Rectangle TrueBounds
+        {
+            get => new Rectangle((int)(Bounds.X + leftOffset * scale.X), (int)(Bounds.Y + topOffset * scale.Y), (int)((Bounds.Width - leftOffset - rightOffset) * scale.X), (int)((Bounds.Height - topOffset - bottomOffset) * scale.Y));
+            set
+            {
+                scale = new Vector2(value.Width / startingBounds.X, value.Height / startingBounds.Y);
+                Bounds = new Rectangle((int)(value.X - leftOffset / scale.X), (int)(value.Y - topOffset / scale.Y), (int)(value.Width / scale.X + leftOffset + rightOffset), (int)(value.Height / scale.Y + topOffset + bottomOffset));
+            }
+        }
 
         const int minWindowWidth = 50;
         const int minWindowHeight = 50;
@@ -238,6 +250,7 @@ namespace WinFormsHalloweenProject
         public readonly Dictionary<Tintmap, (Bitmap template, LinkedList<Bitmap> maps)> particleCache = new Dictionary<Tintmap, (Bitmap, LinkedList<Bitmap>)>();
         private void Ghost_Load(object sender, EventArgs e)
         {
+            startingBounds = new Vector2(TrueBounds.Width, TrueBounds.Height);
             //ParticlePool.Instance.Populate(8, () => new Particle());
             for (int i = 0; i++ < particleCount;)
             {
@@ -397,7 +410,7 @@ namespace WinFormsHalloweenProject
             }
         }
 
-        bool GetPath(bool diff, ref PathStatus pathResult)
+        bool GetPath(bool diff, ref PathStatus pathResult, out LinkedList<Rectangle> spaces)
         {
             IntPtr[] windowHandles = GetAllWindows();
             List<IntPtr> particleHandles = GetParticleHandles();
@@ -436,7 +449,7 @@ namespace WinFormsHalloweenProject
                     var handleText = GetText(windowHandles[i]);
                     int width = temp.Right - temp.Left;
                     int height = temp.Bottom - temp.Top;
-                    if ((handleText != "" && handleText != "Mail" && handleText != "Alienware Command Center" && handleText != "Settings" && handleText != "Calculator" && (width >= minWindowWidth | height >= minWindowHeight) & (width <= maxWindowWidth | height <= maxWindowHeight) & (temp.Left < Screen.PrimaryScreen.Bounds.Right & temp.Top < Screen.PrimaryScreen.Bounds.Bottom & temp.Right > Screen.PrimaryScreen.Bounds.Left & temp.Bottom > Screen.PrimaryScreen.Bounds.Top)) && !CurrentWindows.Contains(temp))
+                    if ((handleText != "Cortana" && handleText != "" && handleText != "Mail" && handleText != "Alienware Command Center" && handleText != "Settings" && handleText != "Calculator" && (width >= minWindowWidth | height >= minWindowHeight) & (width <= maxWindowWidth | height <= maxWindowHeight) & (temp.Left < Screen.PrimaryScreen.Bounds.Right & temp.Top < Screen.PrimaryScreen.Bounds.Bottom & temp.Right > Screen.PrimaryScreen.Bounds.Left & temp.Bottom > Screen.PrimaryScreen.Bounds.Top)) && !CurrentWindows.Contains(temp))
                     {
                         CurrentWindows.Add(temp);
                     }
@@ -457,17 +470,19 @@ namespace WinFormsHalloweenProject
             }
             if (diff | PreviousWindows.Count > 0)
             {
-                CurrentPath = graph.GetPath(CurrentWindows, trueLocation, out pathResult, out endGoal);
+                CurrentPath = graph.GetPath(CurrentWindows, trueLocation, out pathResult, out endGoal, out spaces);
                 return true;
             }
+            spaces = null;
             return false;
         }
 
         // const double wantedSpeed = 5;
         private void Movement_Tick(object sender, EventArgs e)
         {
-            if (GetPath(false, ref pathResult))
+            if (GetPath(false, ref pathResult, out var spaces))
             {
+                Console.WriteLine("new path");
                 vibing = false;
                 pathIndex = -1;
                 globalLerpFactor = 0.001f;
@@ -478,17 +493,15 @@ namespace WinFormsHalloweenProject
 
                 var prevLocation = trueLocation;
                 RECT evilRect = endGoal.ToRECT();
-                for (int i = 0; pathResult != PathStatus.Path; i++)
+                if (pathResult == PathStatus.GhostInWall)
                 {
-                    if (i == 5 || pathResult == PathStatus.NoPath)
-                    {
-                        pathResult = PathStatus.NoPath;
-                        trueLocation = prevLocation;
-                        return;
-                    }
-                    evilRect = new RECT(Math.Min(endGoal.Left, evilRect.Left), Math.Min(endGoal.Top, evilRect.Top), Math.Max(endGoal.Right, evilRect.Right), Math.Max(endGoal.Bottom, evilRect.Bottom));
-                    trueLocation = Declamp(trueLocation, evilRect.Left, evilRect.Right, evilRect.Top, evilRect.Bottom);
-                    GetPath(true, ref pathResult);
+                    // evilRect = new RECT(Math.Min(endGoal.Left, evilRect.Left), Math.Min(endGoal.Top, evilRect.Top), Math.Max(endGoal.Right, evilRect.Right), Math.Max(endGoal.Bottom, evilRect.Bottom));
+
+                    //var newBounds = Declamp(TrueBounds, evilRect.Left, evilRect.Right, evilRect.Top, evilRect.Bottom);
+                    TrueBounds = TrueBounds.GetClosestBounds(spaces);
+                    trueLocation = TrueBounds.GetCenter();
+
+                    CurrentPath = graph.GetPath(CurrentWindows, trueLocation, out pathResult, out endGoal, out spaces);
                 }
 
 
@@ -496,7 +509,7 @@ namespace WinFormsHalloweenProject
                 var oldPoint = CurrentPath[0];
                 for (int i = 1; i < CurrentPath.Length; i++)
                 {
-                    totalDistance += distances[i - 1] = (float)Distance(oldPoint, CurrentPath[i]);
+                    totalDistance += distances[i - 1] = (float)oldPoint.Distance(CurrentPath[i]);
                     oldPoint = CurrentPath[i];
                 }
                 targetDistance = 0;
@@ -509,15 +522,23 @@ namespace WinFormsHalloweenProject
             MovementVector = oldLocation - (Size)Location;
             oldLocation = (Size)Location;
 
+            trueLocation = new Point(Math.Clamp(trueLocation.X, Screen.PrimaryScreen.Bounds.Left, Screen.PrimaryScreen.Bounds.Right - TrueBounds.Width), Math.Clamp(trueLocation.Y, Screen.PrimaryScreen.Bounds.Top, Screen.PrimaryScreen.Bounds.Bottom - TrueBounds.Height));
+
+
             if (vibing = vibing || endGoal.Contains(TrueBounds))
             {
+                Console.WriteLine("vibing");
                 //vibe
+                TrueBounds = new Rectangle(trueLocation.X - TrueBounds.Width / 2, trueLocation.Y - TrueBounds.Width / 2, TrueBounds.Width, TrueBounds.Height);
+                //    Location = new Point(trueLocation.X - TrueBounds.Width / 2 + rand.Next(-5, 5), trueLocation.Y - TrueBounds.Width / 2 + +rand.Next(-5, 5));
                 return;
             }
-
+            Console.WriteLine("Not vibing :(");
+            #region the worst lerp
             //Console.WriteLine(vibing);
             //Console.WriteLine("i" + pathIndex);
             //Console.WriteLine("pl" + (CurrentPath.Length - 1));
+            //lerpFactor += (globalLerpFactor / Math.Max((float)Distance(trueLocation, CurrentPath[pathIndex]), 1) * totalDistance);
 
 
             //if (Distance(trueLocation, CurrentPath[pathIndex]) <= 1)
@@ -534,22 +555,22 @@ namespace WinFormsHalloweenProject
             //}
             //else
             //{
-
-            var lerpChange = Math.Clamp(globalLerpFactor * (1 + (globalLerpFactor <= .5).ToByte() * 2 - 1) * .1f, .005f, .05f);
-            //lerpFactor += (globalLerpFactor / Math.Max((float)Distance(trueLocation, CurrentPath[pathIndex]), 1) * totalDistance);
-            globalLerpFactor += lerpChange;            
+            #endregion
+            var lerpChange = Math.Clamp(globalLerpFactor * (1 + (globalLerpFactor <= .5).ToByte() * 2 - 1) * .1f, .001f, .005f);
+            globalLerpFactor += lerpChange;
             currentDistance = 0f.Lerp(totalDistance, globalLerpFactor);
             if (vibing = globalLerpFactor >= 1) return;
             if (currentDistance >= targetDistance)
             {
-                targetDistance += distances[++pathIndex];                
+                targetDistance += distances[++pathIndex];
             }
-            //}
+
 
 
             trueLocation = CurrentPath[pathIndex + 1].Lerp(trueLocation, (currentDistance - (targetDistance - distances[pathIndex])) / distances[pathIndex]);
 
-            Location = trueLocation;
+            TrueBounds = new Rectangle(trueLocation.X - TrueBounds.Width / 2, trueLocation.Y - TrueBounds.Width / 2, TrueBounds.Width, TrueBounds.Height);
+            //Location = new Point(trueLocation.X - TrueBounds.Width / 2 + rand.Next(-5, 5), trueLocation.Y - TrueBounds.Width / 2 + +rand.Next(-5, 5));
 
             /*
             Point newPosition = new Point(oldLocation.Width, oldLocation.Height);
@@ -582,6 +603,9 @@ namespace WinFormsHalloweenProject
             #endregion
 
         }
+
+
+
         #region old
         //private new Rectangle Move()
         //{
@@ -589,62 +613,89 @@ namespace WinFormsHalloweenProject
         //}
         #endregion
 
-        private new Rectangle Wander(int deltaX, int deltaY)
+        //private new Rectangle Wander(int deltaX, int deltaY)
+        //{
+        //    Rectangle tentativeRectangle = new Rectangle(TrueBounds.Location.X + deltaX, TrueBounds.Location.Y + deltaY, TrueBounds.Width, TrueBounds.Height);
+        //    foreach (RECT rect in CurrentWindows)
+        //    { 
+        //    }
+        //}
+        public Rectangle Declamp(Rectangle val, int xMin, int xMax, int yMin, int yMax)
         {
-            Rectangle tentativeRectangle = new Rectangle(TrueBounds.Location.X + deltaX, TrueBounds.Location.Y + deltaY, TrueBounds.Width, TrueBounds.Height);
-            foreach (RECT rect in CurrentWindows)
-            { 
-            }
-        }
-        public Point Declamp(Point val, int xMin, int xMax, int yMin, int yMax)
-        {
-            Point returnVal = val;
-            Point averages = new Point((xMax + xMin) / 2, (yMax + yMin) / 2);
-            if (val.X > xMin && val.X < xMax && val.Y > yMin && val.Y < yMax)
+            // Point returnVal = val;
+            // Point averages = new Point((xMax + xMin) / 2, (yMax + yMin) / 2);
+            if (val.Right > xMin && val.Left < xMax && val.Bottom > yMin && val.Top < yMax)
             {
-                int shouldXMin = val.X - xMin;
-                int shouldXMax = xMax - val.X;
-                int shouldYMin = val.Y - yMin;
-                int shouldYMax = yMax - val.Y;
+                int Xdistance;
+                int Ydistance;
+                int distA = val.Right - xMin;
+                int distB = xMax - val.Left;
+                byte shouldGoLeft;
+                Xdistance = shouldGoLeft = (distA < distB & xMin - val.Width >= Screen.PrimaryScreen.Bounds.Left | xMax + val.Width > Screen.PrimaryScreen.Bounds.Right).ToByte();
+                Xdistance += Xdistance * distA - (Xdistance - 1) * distB;
+                distA = val.Bottom - yMin;
+                distB = yMax - val.Top;
+                byte shouldGoUp;
+                Ydistance = shouldGoUp = (distA < distB & yMin - val.Height >= Screen.PrimaryScreen.Bounds.Top | yMax + val.Height > Screen.PrimaryScreen.Bounds.Bottom).ToByte();
+                Ydistance += Ydistance * distA - (Ydistance - 1) * distB;
+                byte icky;
+                Xdistance += (icky = ((xMax + val.Width) * (-shouldGoLeft + 1) > Screen.PrimaryScreen.Bounds.Right).ToByte()) * int.MaxValue - (icky * Xdistance);
+                Ydistance += (icky = ((yMax + val.Height) * (-shouldGoUp + 1) > Screen.PrimaryScreen.Bounds.Bottom).ToByte()) * int.MaxValue - (icky * Ydistance);
 
-                bool isXMin = shouldXMin < shouldXMax;
-                bool isYMin = shouldYMin < shouldYMax;
-
-                int bestXScore = isXMin ? shouldXMin : shouldXMax;
-                int bestYScore = isYMin ? shouldYMin : shouldYMax;
-
-                if (bestXScore < bestYScore)
+                if ((Xdistance < Ydistance))
                 {
-                    if (isXMin)
-                    {
-                        returnVal.X = xMin;
-                    }
-                    else
-                    {
-                        returnVal.X = xMax;
-                    }
+                    val.Location = new Point(shouldGoLeft * (xMin - val.Width - 1) + (shouldGoLeft * -1 + 1) * (xMax + 1), val.Y);
                 }
-                else
+                else if ((Xdistance < Ydistance))
                 {
-                    if (isYMin)
-                    {
-                        returnVal.Y = yMin;
-                    }
-                    else
-                    {
-                        returnVal.Y = yMax;
-                    }
+                    val.Location = new Point(val.X, shouldGoUp * (yMin - val.Height - 1) + (shouldGoUp * -1 + 1) * (yMax + 1));
                 }
-
             }
-            return returnVal;
+            return val;
+
+            // & xMin > Screen.PrimaryScreen.Bounds.Left | xMax < Screen.PrimaryScreen.Bounds.Right;
+            //    bool shouldGoUp = val.X - xMin <  & xMin > Screen.PrimaryScreen.Bounds.Left | xMax < Screen.PrimaryScreen.Bounds.Right;
+
+            //    int shouldYMin = val.Y - yMin;
+            //    int shouldYMax = yMax - val.Y;
+
+            //    bool isXMin = shouldGoLeft < shouldXMax;
+            //    bool isYMin = shouldYMin < shouldYMax;
+
+            //    int bestXScore = isXMin ? shouldGoLeft : shouldXMax;
+            //    int bestYScore = isYMin ? shouldYMin : shouldYMax;
+
+            //    if (bestXScore < bestYScore)
+            //    {
+            //        if (isXMin)
+            //        {
+            //            returnVal.X = xMin;
+            //        }
+            //        else
+            //        {
+            //            returnVal.X = xMax;
+            //        }
+            //    }
+            //    else
+            //    {
+            //        if (isYMin)
+            //        {
+            //            returnVal.Y = yMin;
+            //        }
+            //        else
+            //        {
+            //            returnVal.Y = yMax;
+            //        }
+            //    }
+
+            //}
+            //return returnVal;
         }
 
         private void Ghost_FormClosing(object sender, FormClosingEventArgs e)
         {
             foreach (var particle in Particles) if (particle != null) particle.Close();
         }
-        public static double Distance(Point A, Point B) => Math.Sqrt((B.X - A.X) * (B.X - A.X) + (B.Y - A.Y) * (B.Y - A.Y));
 
         public List<IntPtr> GetWindowHandles(string windowTitle)
         {

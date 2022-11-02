@@ -44,6 +44,7 @@ namespace WinFormsHalloweenProject
                     currSize = newSize;
                     currIterations++;
                 }
+
                 Size += NodeA.OwnerGraph.screenSize / currSize * currIterations;
                 Size /= (totalLerps - 2);
             }
