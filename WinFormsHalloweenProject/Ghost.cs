@@ -520,6 +520,7 @@ namespace WinFormsHalloweenProject
             if (vibing = vibing || endGoal.Contains(TrueBounds))
             {
                 //vibe
+                Wander();
                 return;
             }
 
@@ -545,12 +546,12 @@ namespace WinFormsHalloweenProject
 
             var lerpChange = Math.Clamp(globalLerpFactor * (1 + (globalLerpFactor <= .5).ToByte() * 2 - 1) * .1f, .005f, .05f);
             //lerpFactor += (globalLerpFactor / Math.Max((float)Distance(trueLocation, CurrentPath[pathIndex]), 1) * totalDistance);
-            globalLerpFactor += lerpChange;            
+            globalLerpFactor += lerpChange;
             currentDistance = 0f.Lerp(totalDistance, globalLerpFactor);
             if (vibing = globalLerpFactor >= 1) return;
             if (currentDistance >= targetDistance)
             {
-                targetDistance += distances[++pathIndex];                
+                targetDistance += distances[++pathIndex];
             }
             //}
 
@@ -562,6 +563,7 @@ namespace WinFormsHalloweenProject
 
         private new Rectangle Wander()
         {
+            Console.WriteLine("Wandering");
             int deltaX = currentSpeed.X * currentDirection.X;
             int deltaY = currentSpeed.Y * currentDirection.Y;
             RECT tentativeRectangle = new RECT(TrueBounds.Left + deltaX, TrueBounds.Top + deltaY, TrueBounds.Right + deltaX, TrueBounds.Bottom + deltaY);
@@ -575,9 +577,69 @@ namespace WinFormsHalloweenProject
                     int topOverlap = tentativeRectangle.GetTopOverlap(rect);
                     int rightOverlap = tentativeRectangle.GetRightOverlap(rect);
                     int bottomOverlap = tentativeRectangle.GetBottomOverlap(rect);
-                    //whichever overlap is the largest is the side that the ghost needs to be pushed out of and the side that the direction of movement should be switched
+
+                    int maxOverlap = Math.Max(Math.Max(leftOverlap, topOverlap), Math.Max(rightOverlap, bottomOverlap));
+                    if (leftOverlap == maxOverlap)
+                    {
+                        Console.WriteLine("LeftOverlapped");
+                        switchXDirection = true;
+                        tentativeRectangle = tentativeRectangle.ClampToRight(rect);
+                    }
+                    if (topOverlap == maxOverlap)
+                    {
+                        Console.WriteLine("TopOverlapped");
+                        switchYDirection = true;
+                        tentativeRectangle = tentativeRectangle.ClampToBottom(rect);
+                    }
+                    if (rightOverlap == maxOverlap)
+                    {
+                        Console.WriteLine("RightOverlapped");
+                        switchXDirection = true;
+                        tentativeRectangle = tentativeRectangle.ClampToLeft(rect);
+                    }
+                    if (bottomOverlap == maxOverlap)
+                    {
+                        Console.WriteLine("BottomOverlapped");
+                        switchYDirection = true;
+                        tentativeRectangle = tentativeRectangle.ClampToTop(rect);
+                    }
+
+                    //switch(maxOverlap)
+                    //{
+                    //    case leftOverlap:
+
+                    //        break;
+
+                    //    case topOverlap:
+
+                    //        break;
+
+                    //    case rightOverlap:
+
+                    //        break;
+
+                    //    case bottomOverlap:
+
+                    //        break;
+                    //}
                     //run this check a second time to make sure the ghost is successfuly moved. If it isn't just return the old distance(also figure out which directions need to be switched somehow, maybe both) 
+                    //whichever overlap is the largest is the side that the ghost needs to be pushed out of and the side that the direction of movement should be switched
                 }
+            }
+            foreach (RECT rect in CurrentWindows)
+            {
+                if (rect.Intersects(tentativeRectangle))
+                {
+                    Console.WriteLine("Oh wow this case actually happens(in the Wander function)");
+                }
+            }
+            if(switchXDirection)
+            {
+                currentDirection.X *= -1;
+            }
+            if(switchYDirection)
+            {
+                currentDirection.Y *= -1;
             }
             return tentativeRectangle.ToRectangle();
         }

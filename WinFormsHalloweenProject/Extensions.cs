@@ -44,6 +44,19 @@ namespace WinFormsHalloweenProject
             return new Point(targetRectangle.Left + targetRectangle.Width / 2, targetRectangle.Top + targetRectangle.Height / 2);
         }
 
+
+        public static RECT ClampToLeft(this RECT currentRECT, RECT containerRECT) => 
+            new RECT(containerRECT.Left - currentRECT.Width, currentRECT.Top, containerRECT.Left, currentRECT.Bottom);
+
+        public static RECT ClampToTop(this RECT currentRECT, RECT containerRECT) =>
+            new RECT(currentRECT.Left, containerRECT.Top - currentRECT.Height, currentRECT.Right, containerRECT.Top);
+
+        public static RECT ClampToRight(this RECT currentRECT, RECT containerRECT) =>
+            new RECT(containerRECT.Right, currentRECT.Top, containerRECT.Right + currentRECT.Width, currentRECT.Bottom);
+
+        public static RECT ClampToBottom(this RECT currentRECT, RECT containerRECT) =>
+            new RECT(currentRECT.Left, containerRECT.Bottom, currentRECT.Right, containerRECT.Bottom + currentRECT.Height);
+
         public static bool Intersects(this RECT rect1, RECT rect2) => rect1.Top <= rect2.Bottom & rect1.Bottom >= rect2.Top & rect1.Left <= rect2.Right & rect1.Right >= rect2.Left;
 
         public static bool ContainsLeft(this RECT containerRECT, RECT isContainedRECT) => containerRECT.Left <= isContainedRECT.Right & containerRECT.Left >= isContainedRECT.Left & (containerRECT.Top <= isContainedRECT.Bottom & containerRECT.Bottom >= isContainedRECT.Top); //containerRECT contains the left of isContainedRECT
