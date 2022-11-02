@@ -35,6 +35,8 @@ namespace WinFormsHalloweenProject
             public int Top;
             public int Right;
             public int Bottom;
+            public int Width => Right - Left;
+            public int Height => Bottom - Top;
 
             public RECT(int left, int top, int right, int bottom)
             {
@@ -161,9 +163,15 @@ namespace WinFormsHalloweenProject
         static Point startingPoint = new Point(10, 10);
         const double ghostScale = .5;
         const double particleScale = 1;
-        static Size speed = new Size(1, 1);
         int currentIndex = 0;
         Bitmap[] images;
+
+        #region GhostWanderingVariables
+        private const int targetXSpeed = 5;
+        private const int targetYSpeed = 5;
+        private Point currentSpeed;
+        private Point currentDirection;
+        #endregion
 
         Size oldLocation;
         public Size MovementVector;
@@ -529,6 +537,7 @@ namespace WinFormsHalloweenProject
             {
                 Console.WriteLine("vibing");
                 //vibe
+                Wander();
                 TrueBounds = new Rectangle(trueLocation.X - TrueBounds.Width / 2, trueLocation.Y - TrueBounds.Width / 2, TrueBounds.Width, TrueBounds.Height);
                 //    Location = new Point(trueLocation.X - TrueBounds.Width / 2 + rand.Next(-5, 5), trueLocation.Y - TrueBounds.Width / 2 + +rand.Next(-5, 5));
                 return;
@@ -572,20 +581,104 @@ namespace WinFormsHalloweenProject
             TrueBounds = new Rectangle(trueLocation.X - TrueBounds.Width / 2, trueLocation.Y - TrueBounds.Width / 2, TrueBounds.Width, TrueBounds.Height);
             //Location = new Point(trueLocation.X - TrueBounds.Width / 2 + rand.Next(-5, 5), trueLocation.Y - TrueBounds.Width / 2 + +rand.Next(-5, 5));
 
-            /*
-            Point newPosition = new Point(oldLocation.Width, oldLocation.Height);
-            if (CurrentPath.Length > 1)
+        private new Rectangle Wander()
+        {
+            Console.WriteLine("Wandering");
+            int deltaX = currentSpeed.X * currentDirection.X;
+            int deltaY = currentSpeed.Y * currentDirection.Y;
+            RECT tentativeRectangle = new RECT(TrueBounds.Left + deltaX, TrueBounds.Top + deltaY, TrueBounds.Right + deltaX, TrueBounds.Bottom + deltaY);
+            bool switchXDirection = false;
+            bool switchYDirection = false;
+            foreach (RECT rect in CurrentWindows)
             {
-                double distance = Distance(TrueBounds.Location, CurrentPath[1]);
-                newPosition = new Point((int)((double)TrueBounds.X).Lerp(CurrentPath[1].X, 1 / distance * 10 * speed.Width), (int)((double)TrueBounds.Y).Lerp(CurrentPath[1].Y, 1 / distance * 10 * speed.Height));
-            }
-            if (newPosition.X < 1920 & newPosition.Y < 1080 & newPosition.X > 0 & newPosition.Y > 0)
-            {
-                Bounds = new Rectangle((Point)((Size)newPosition - new Size(leftOffset, topOffset)), Bounds.Size);
-            }
-            */
-            #region old
+                if (rect.Intersects(tentativeRectangle))
+                {
+                    int leftOverlap = tentativeRectangle.GetLeftOverlap(rect);
+                    int topOverlap = tentativeRectangle.GetTopOverlap(rect);
+                    int rightOverlap = tentativeRectangle.GetRightOverlap(rect);
+                    int bottomOverlap = tentativeRectangle.GetBottomOverlap(rect);
 
+                    int maxOverlap = Math.Max(Math.Max(leftOverlap, topOverlap), Math.Max(rightOverlap, bottomOverlap));
+                    if (leftOverlap == maxOverlap)
+                    {
+                        Console.WriteLine("LeftOverlapped");
+                        switchXDirection = true;
+                        tentativeRectangle = tentativeRectangle.ClampToRight(rect);
+                    }
+                    if (topOverlap == maxOverlap)
+                    {
+                        Console.WriteLine("TopOverlapped");
+                        switchYDirection = true;
+                        tentativeRectangle = tentativeRectangle.ClampToBottom(rect);
+                    }
+                    if (rightOverlap == maxOverlap)
+                    {
+                        Console.WriteLine("RightOverlapped");
+                        switchXDirection = true;
+                        tentativeRectangle = tentativeRectangle.ClampToLeft(rect);
+                    }
+                    if (bottomOverlap == maxOverlap)
+                    {
+                        Console.WriteLine("BottomOverlapped");
+                        switchYDirection = true;
+                        tentativeRectangle = tentativeRectangle.ClampToTop(rect);
+                    }
+
+                    //switch(maxOverlap)
+                    //{
+                    //    case leftOverlap:
+
+                    //        break;
+
+                    //    case topOverlap:
+
+                    //        break;
+
+                    //    case rightOverlap:
+
+                    //        break;
+
+                    //    case bottomOverlap:
+
+                    //        break;
+                    //}
+                    //run this check a second time to make sure the ghost is successfuly moved. If it isn't just return the old distance(also figure out which directions need to be switched somehow, maybe both) 
+                    //whichever overlap is the largest is the side that the ghost needs to be pushed out of and the side that the direction of movement should be switched
+                }
+            }
+            foreach (RECT rect in CurrentWindows)
+            {
+                if (rect.Intersects(tentativeRectangle))
+                {
+                    Console.WriteLine("Oh wow this case actually happens(in the Wander function)");
+                }
+            }
+            if(switchXDirection)
+            {
+                currentDirection.X *= -1;
+            }
+            if(switchYDirection)
+            {
+                currentDirection.Y *= -1;
+            }
+            return tentativeRectangle.ToRectangle();
+        }
+        public Point Declamp(Point val, int xMin, int xMax, int yMin, int yMax)
+        {
+            Point returnVal = val;
+            Point averages = new Point((xMax + xMin) / 2, (yMax + yMin) / 2);
+            if (val.X > xMin && val.X < xMax && val.Y > yMin && val.Y < yMax)
+            {
+                int shouldXMin = val.X - xMin;
+                int shouldXMax = xMax - val.X;
+                int shouldYMin = val.Y - yMin;
+                int shouldYMax = yMax - val.Y;
+
+                bool isXMin = shouldXMin < shouldXMax;
+                bool isYMin = shouldYMin < shouldYMax;
+
+                int bestXScore = isXMin ? shouldXMin : shouldXMax;
+                int bestYScore = isYMin ? shouldYMin : shouldYMax;
             //else
             //{
             //    newPosition = Move().Location;

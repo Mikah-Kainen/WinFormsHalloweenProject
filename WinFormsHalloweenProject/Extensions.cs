@@ -68,6 +68,70 @@ namespace WinFormsHalloweenProject
             return new Point(targetRectangle.Left + targetRectangle.Width / 2, targetRectangle.Top + targetRectangle.Height / 2);
         }
 
+
+        public static RECT ClampToLeft(this RECT currentRECT, RECT containerRECT) => 
+            new RECT(containerRECT.Left - currentRECT.Width, currentRECT.Top, containerRECT.Left, currentRECT.Bottom);
+
+        public static RECT ClampToTop(this RECT currentRECT, RECT containerRECT) =>
+            new RECT(currentRECT.Left, containerRECT.Top - currentRECT.Height, currentRECT.Right, containerRECT.Top);
+
+        public static RECT ClampToRight(this RECT currentRECT, RECT containerRECT) =>
+            new RECT(containerRECT.Right, currentRECT.Top, containerRECT.Right + currentRECT.Width, currentRECT.Bottom);
+
+        public static RECT ClampToBottom(this RECT currentRECT, RECT containerRECT) =>
+            new RECT(currentRECT.Left, containerRECT.Bottom, currentRECT.Right, containerRECT.Bottom + currentRECT.Height);
+
+        public static bool Intersects(this RECT rect1, RECT rect2) => rect1.Top <= rect2.Bottom & rect1.Bottom >= rect2.Top & rect1.Left <= rect2.Right & rect1.Right >= rect2.Left;
+
+        public static bool ContainsLeft(this RECT containerRECT, RECT isContainedRECT) => containerRECT.Left <= isContainedRECT.Right & containerRECT.Left >= isContainedRECT.Left & (containerRECT.Top <= isContainedRECT.Bottom & containerRECT.Bottom >= isContainedRECT.Top); //containerRECT contains the left of isContainedRECT
+        public static bool ContainsTop(this RECT containerRECT, RECT isContainedRECT) => containerRECT.Top <= isContainedRECT.Bottom & containerRECT.Top >= isContainedRECT.Top & (containerRECT.Left <= isContainedRECT.Right & containerRECT.Right >= isContainedRECT.Left); //containerRECT contains the top of isContainedRECT
+        public static bool ContainsRight(this RECT containerRECT, RECT isContainedRECT) => containerRECT.Right >= isContainedRECT.Left & containerRECT.Right <= isContainedRECT.Right & (containerRECT.Top <= isContainedRECT.Bottom & containerRECT.Bottom >= isContainedRECT.Top); //containerRECT contains the right of isContainedRECT
+        public static bool ContainsBottom(this RECT containerRECT, RECT isContainedRECT) => containerRECT.Bottom >= isContainedRECT.Top & containerRECT.Bottom <= isContainedRECT.Bottom & (containerRECT.Left <= isContainedRECT.Right & containerRECT.Right >= isContainedRECT.Left); //containerRECT contains the bottom of isContainedRECT
+
+        public static int GetLeftOverlap(this RECT isContainedRECT, RECT containerRECT)
+        {
+            if(!ContainsLeft(containerRECT, isContainedRECT))
+            {
+                return 0;
+            }
+            int bottomDifference = Math.Abs(containerRECT.Bottom - isContainedRECT.Bottom);
+            int topDifference = Math.Abs(containerRECT.Top - isContainedRECT.Top);
+            return (containerRECT.Height + isContainedRECT.Height - bottomDifference - topDifference) / 2;
+        }
+
+        public static int GetTopOverlap(this RECT isContainedRECT, RECT containerRECT)
+        {
+            if (!ContainsTop(containerRECT, isContainedRECT))
+            {
+                return 0;
+            }
+            int leftDifference = Math.Abs(containerRECT.Left - isContainedRECT.Left);
+            int rightDifference = Math.Abs(containerRECT.Right - isContainedRECT.Right);
+            return (containerRECT.Width + isContainedRECT.Width - leftDifference - rightDifference) / 2;
+        }
+
+        public static int GetRightOverlap(this RECT isContainedRECT, RECT containerRECT)
+        {
+            if (!ContainsRight(containerRECT, isContainedRECT))
+            {
+                return 0;
+            }
+            int bottomDifference = Math.Abs(containerRECT.Bottom - isContainedRECT.Bottom);
+            int topDifference = Math.Abs(containerRECT.Top - isContainedRECT.Top);
+            return (containerRECT.Height + isContainedRECT.Height - bottomDifference - topDifference) / 2;
+        }
+
+        public static int GetBottomOverlap(this RECT isContainedRECT, RECT containerRECT)
+        {
+            if (!ContainsBottom(containerRECT, isContainedRECT))
+            {
+                return 0;
+            }
+            int leftDifference = Math.Abs(containerRECT.Left - isContainedRECT.Left);
+            int rightDifference = Math.Abs(containerRECT.Right - isContainedRECT.Right);
+            return (containerRECT.Width + isContainedRECT.Width - leftDifference - rightDifference) / 2;
+        }
+
         public static bool GenerousContains(this Rectangle rect, Point target) => target.X >= rect.Left & target.X <= rect.Right & target.Y >= rect.Top & target.Y <= rect.Bottom;
         public static bool MoneyGrubbingContains(this Rectangle rect, Point target) => target.X > rect.Left & target.X < rect.Right & target.Y > rect.Top & target.Y < rect.Bottom;
         public static bool Contains(this RECT rect, RECT targetRect) => targetRect.Left >= rect.Left & targetRect.Right <= rect.Right & targetRect.Top >= rect.Top & targetRect.Bottom <= rect.Bottom;

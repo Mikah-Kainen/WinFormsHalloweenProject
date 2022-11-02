@@ -61,10 +61,14 @@ namespace WinFormsHalloweenProject
 
             Func<Ghost.RECT, Ghost.RECT, bool>[] CheckIntersections =
             {
-                (rect, scaledRect) => rect.Left <= scaledRect.Right & rect.Left >= scaledRect.Left & (rect.Top <= scaledRect.Bottom & rect.Bottom >= scaledRect.Top), //scaledRect blocks the left
-                (rect, scaledRect) => rect.Top <= scaledRect.Bottom & rect.Top >= scaledRect.Top & (rect.Left <= scaledRect.Right & rect.Right >= scaledRect.Left), //scaledRect blocks the top
-                (rect, scaledRect) => rect.Right >= scaledRect.Left & rect.Right <= scaledRect.Right & (rect.Top <= scaledRect.Bottom & rect.Bottom >= scaledRect.Top), //scaledRect blocks the right
-                (rect, scaledRect) => rect.Bottom >= scaledRect.Top & rect.Bottom <= scaledRect.Bottom & (rect.Left <= scaledRect.Right & rect.Right >= scaledRect.Left), //scaledRect blocks the bottom
+                //(rect, scaledRect) => rect.Left <= scaledRect.Right & rect.Left >= scaledRect.Left & (rect.Top <= scaledRect.Bottom & rect.Bottom >= scaledRect.Top), //scaledRect blocks the left
+                //(rect, scaledRect) => rect.Top <= scaledRect.Bottom & rect.Top >= scaledRect.Top & (rect.Left <= scaledRect.Right & rect.Right >= scaledRect.Left), //scaledRect blocks the top
+                //(rect, scaledRect) => rect.Right >= scaledRect.Left & rect.Right <= scaledRect.Right & (rect.Top <= scaledRect.Bottom & rect.Bottom >= scaledRect.Top), //scaledRect blocks the right
+                //(rect, scaledRect) => rect.Bottom >= scaledRect.Top & rect.Bottom <= scaledRect.Bottom & (rect.Left <= scaledRect.Right & rect.Right >= scaledRect.Left), //scaledRect blocks the bottom
+                (rect, scaledRect) => rect.ContainsLeft(scaledRect),
+                (rect, scaledRect) => rect.ContainsTop(scaledRect),
+                (rect, scaledRect) => rect.ContainsRight(scaledRect),
+                (rect, scaledRect) => rect.ContainsBottom(scaledRect),
             };
 
             Node?[] sideNodes

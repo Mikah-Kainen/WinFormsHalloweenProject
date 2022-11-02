@@ -146,6 +146,8 @@ namespace Rectangle_Hueristic
                 HashSet<RECT> dumberRects = rects.Select(m => m.ToRECT()).ToHashSet();
                 var points = graph.GetPath(dumberRects, e.Location, out var noPath, out var temp, out var recties);
                 if (noPath != PathStatus.NoPath)
+                var points = graph.GetPath(dumberRects, e.Location, out var noPath, out var temp);
+                if (noPath == PathStatus.Path)
                 {
 
                     Point oldPoint = Point.Empty;
