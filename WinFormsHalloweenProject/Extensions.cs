@@ -37,7 +37,7 @@ namespace WinFormsHalloweenProject
         public static int SetIfTrue(this int a, int b, bool condition)
         {
             var result = condition.ToByte();
-            return a * result - (b * (result - 1));
+            return b * result - (a * (result - 1));
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float GetIfTrue(this float a, float b, bool condition)
@@ -157,7 +157,7 @@ namespace WinFormsHalloweenProject
             position.Y = Max(a.Top, b.Top);
             position.Y = position.Y.SetIfTrue(b.Bottom - newSize.Height, b.Bottom < a.Bottom);
             position.X = Max(a.Left, b.Left);
-            position.X = position.Y.SetIfTrue(b.Right - newSize.Width, b.Right < a.Right);
+            position.X = position.X.SetIfTrue(b.Right - newSize.Width, b.Right < a.Right);
 
             return a.Location.Distance(position); 
         }

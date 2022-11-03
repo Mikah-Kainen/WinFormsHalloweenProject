@@ -186,11 +186,11 @@ namespace WinFormsHalloweenProject
 
         Rectangle TrueBounds
         {
-            get => new Rectangle((int)(Bounds.X + leftOffset * scale.X), (int)(Bounds.Y + topOffset * scale.Y), (int)((Bounds.Width - leftOffset - rightOffset) * scale.X), (int)((Bounds.Height - topOffset - bottomOffset) * scale.Y));
+            get => new Rectangle((int)(Bounds.X + leftOffset * scale.X), (int)(Bounds.Y + topOffset * scale.Y), (int)(Bounds.Width - leftOffset * scale.X - rightOffset * scale.X), (int)(Bounds.Height - topOffset * scale.Y - bottomOffset * scale.Y));
             set
             {
                 scale = new Vector2(value.Width / startingBounds.X, value.Height / startingBounds.Y);
-                Bounds = new Rectangle((int)(value.X - leftOffset / scale.X), (int)(value.Y - topOffset / scale.Y), (int)(value.Width / scale.X + leftOffset + rightOffset), (int)(value.Height / scale.Y + topOffset + bottomOffset));
+                Bounds = new Rectangle((int)(value.X - leftOffset * scale.X), (int)(value.Y - topOffset * scale.Y), (int)(value.Width + leftOffset * scale.X + rightOffset * scale.X), (int)(value.Height + topOffset * scale.Y + bottomOffset * scale.Y));
             }
         }
 
@@ -258,7 +258,6 @@ namespace WinFormsHalloweenProject
         public readonly Dictionary<Tintmap, (Bitmap template, LinkedList<Bitmap> maps)> particleCache = new Dictionary<Tintmap, (Bitmap, LinkedList<Bitmap>)>();
         private void Ghost_Load(object sender, EventArgs e)
         {
-            startingBounds = new Vector2(TrueBounds.Width, TrueBounds.Height);
             //ParticlePool.Instance.Populate(8, () => new Particle());
             for (int i = 0; i++ < particleCount;)
             {
@@ -295,6 +294,7 @@ namespace WinFormsHalloweenProject
             //ShowInTaskbar = false;
             graph = new Graph(Screen.PrimaryScreen.Bounds, new System.Numerics.Vector2(TrueBounds.Width, TrueBounds.Height));
             trueLocation = Location;
+            startingBounds = new Vector2(TrueBounds.Width, TrueBounds.Height);
         }
 
         void CreateParticle()
@@ -506,12 +506,21 @@ namespace WinFormsHalloweenProject
                     // evilRect = new RECT(Math.Min(endGoal.Left, evilRect.Left), Math.Min(endGoal.Top, evilRect.Top), Math.Max(endGoal.Right, evilRect.Right), Math.Max(endGoal.Bottom, evilRect.Bottom));
 
                     //var newBounds = Declamp(TrueBounds, evilRect.Left, evilRect.Right, evilRect.Top, evilRect.Bottom);
-                    TrueBounds = TrueBounds.GetClosestBounds(spaces);
-                    trueLocation = TrueBounds.GetCenter();
+                    var newBounds = TrueBounds.GetClosestBounds(spaces);
+                    TrueBounds = newBounds;
+                    #region Mikah IDK
+                    if (TrueBounds != newBounds)
+                    {
+                        //T OD O RO L IS T:
+                        //make the GetClosestBounds take into account aspect ratio
+                        //make a true bounds that uses doubles to avoid rounding errors
+                        //make it so the ghost increases in size when it has the chance
+                    }
+                    #endregion
+                    trueLocation = TrueBounds.GetCenter(); 
 
                     CurrentPath = graph.GetPath(CurrentWindows, trueLocation, out pathResult, out endGoal, out spaces);
                 }
-
 
                 distances = new float[CurrentPath.Length - 1];
                 var oldPoint = CurrentPath[0];
@@ -537,8 +546,8 @@ namespace WinFormsHalloweenProject
             {
                 Console.WriteLine("vibing");
                 //vibe
-                Wander();
-                TrueBounds = new Rectangle(trueLocation.X - TrueBounds.Width / 2, trueLocation.Y - TrueBounds.Width / 2, TrueBounds.Width, TrueBounds.Height);
+                TrueBounds = Wander();
+                //TrueBounds = new Rectangle(trueLocation.X - TrueBounds.Width / 2, trueLocation.Y - TrueBounds.Width / 2, TrueBounds.Width, TrueBounds.Height);
                 //    Location = new Point(trueLocation.X - TrueBounds.Width / 2 + rand.Next(-5, 5), trueLocation.Y - TrueBounds.Width / 2 + +rand.Next(-5, 5));
                 return;
             }
@@ -579,7 +588,8 @@ namespace WinFormsHalloweenProject
             trueLocation = CurrentPath[pathIndex + 1].Lerp(trueLocation, (currentDistance - (targetDistance - distances[pathIndex])) / distances[pathIndex]);
 
             TrueBounds = new Rectangle(trueLocation.X - TrueBounds.Width / 2, trueLocation.Y - TrueBounds.Width / 2, TrueBounds.Width, TrueBounds.Height);
-            //Location = new Point(trueLocation.X - TrueBounds.Width / 2 + rand.Next(-5, 5), trueLocation.Y - TrueBounds.Width / 2 + +rand.Next(-5, 5));
+        }
+        //Location = new Point(trueLocation.X - TrueBounds.Width / 2 + rand.Next(-5, 5), trueLocation.Y - TrueBounds.Width / 2 + +rand.Next(-5, 5));
 
         private new Rectangle Wander()
         {
@@ -653,64 +663,47 @@ namespace WinFormsHalloweenProject
                     Console.WriteLine("Oh wow this case actually happens(in the Wander function)");
                 }
             }
-            if(switchXDirection)
+            if (switchXDirection)
             {
                 currentDirection.X *= -1;
             }
-            if(switchYDirection)
+            if (switchYDirection)
             {
                 currentDirection.Y *= -1;
             }
             return tentativeRectangle.ToRectangle();
         }
-        public Point Declamp(Point val, int xMin, int xMax, int yMin, int yMax)
-        {
-            Point returnVal = val;
-            Point averages = new Point((xMax + xMin) / 2, (yMax + yMin) / 2);
-            if (val.X > xMin && val.X < xMax && val.Y > yMin && val.Y < yMax)
-            {
-                int shouldXMin = val.X - xMin;
-                int shouldXMax = xMax - val.X;
-                int shouldYMin = val.Y - yMin;
-                int shouldYMax = yMax - val.Y;
-
-                bool isXMin = shouldXMin < shouldXMax;
-                bool isYMin = shouldYMin < shouldYMax;
-
-                int bestXScore = isXMin ? shouldXMin : shouldXMax;
-                int bestYScore = isYMin ? shouldYMin : shouldYMax;
-            //else
-            //{
-            //    newPosition = Move().Location;
-            //}
-            //var oldNewPosition = newPosition;
-            //newPosition = new Point(Math.Clamp(newPosition.X, Screen.PrimaryScreen.Bounds.Left, Screen.PrimaryScreen.Bounds.Right - TrueBounds.Width), Math.Clamp(newPosition.Y, Screen.PrimaryScreen.Bounds.Top, Screen.PrimaryScreen.Bounds.Bottom - TrueBounds.Height));
-            //if (oldNewPosition.X != newPosition.X)
-            //{
-            //    speeds.Width *= -1;
-            //}
-            //if (oldNewPosition.Y != newPosition.Y)
-            //{
-            //    speeds.Height *= -1;
-            //}
-            #endregion
-
-        }
-
-
-
-        #region old
-        //private new Rectangle Move()
+        //public Point Declamp(Point val, int xMin, int xMax, int yMin, int yMax)
         //{
-        //    return new Rectangle((Point)(((Size)TrueBounds.Location) - new Size(leftOffset, topOffset) + shake + speeds), Bounds.Size);
-        //}
-        #endregion
+        //    Point returnVal = val;
+        //    Point averages = new Point((xMax + xMin) / 2, (yMax + yMin) / 2);
+        //    if (val.X > xMin && val.X < xMax && val.Y > yMin && val.Y < yMax)
+        //    {
+        //        int shouldXMin = val.X - xMin;
+        //        int shouldXMax = xMax - val.X;
+        //        int shouldYMin = val.Y - yMin;
+        //        int shouldYMax = yMax - val.Y;
 
-        //private new Rectangle Wander(int deltaX, int deltaY)
-        //{
-        //    Rectangle tentativeRectangle = new Rectangle(TrueBounds.Location.X + deltaX, TrueBounds.Location.Y + deltaY, TrueBounds.Width, TrueBounds.Height);
-        //    foreach (RECT rect in CurrentWindows)
-        //    { 
+        //        bool isXMin = shouldXMin < shouldXMax;
+        //        bool isYMin = shouldYMin < shouldYMax;
+
+        //        int bestXScore = isXMin ? shouldXMin : shouldXMax;
+        //        int bestYScore = isYMin ? shouldYMin : shouldYMax;
+        //        //else
+        //        //{
+        //        //    newPosition = Move().Location;
+        //        //}
+        //        //var oldNewPosition = newPosition;
+        //        //newPosition = new Point(Math.Clamp(newPosition.X, Screen.PrimaryScreen.Bounds.Left, Screen.PrimaryScreen.Bounds.Right - TrueBounds.Width), Math.Clamp(newPosition.Y, Screen.PrimaryScreen.Bounds.Top, Screen.PrimaryScreen.Bounds.Bottom - TrueBounds.Height));
+        //        //if (oldNewPosition.X != newPosition.X)
+        //        //{
+        //        //    speeds.Width *= -1;
+        //        //}
+        //        //if (oldNewPosition.Y != newPosition.Y)
+        //        //{
+        //        //    speeds.Height *= -1;
+        //        //}
+
         //    }
         //}
         public Rectangle Declamp(Rectangle val, int xMin, int xMax, int yMin, int yMax)
@@ -745,45 +738,56 @@ namespace WinFormsHalloweenProject
                 }
             }
             return val;
-
-            // & xMin > Screen.PrimaryScreen.Bounds.Left | xMax < Screen.PrimaryScreen.Bounds.Right;
-            //    bool shouldGoUp = val.X - xMin <  & xMin > Screen.PrimaryScreen.Bounds.Left | xMax < Screen.PrimaryScreen.Bounds.Right;
-
-            //    int shouldYMin = val.Y - yMin;
-            //    int shouldYMax = yMax - val.Y;
-
-            //    bool isXMin = shouldGoLeft < shouldXMax;
-            //    bool isYMin = shouldYMin < shouldYMax;
-
-            //    int bestXScore = isXMin ? shouldGoLeft : shouldXMax;
-            //    int bestYScore = isYMin ? shouldYMin : shouldYMax;
-
-            //    if (bestXScore < bestYScore)
-            //    {
-            //        if (isXMin)
-            //        {
-            //            returnVal.X = xMin;
-            //        }
-            //        else
-            //        {
-            //            returnVal.X = xMax;
-            //        }
-            //    }
-            //    else
-            //    {
-            //        if (isYMin)
-            //        {
-            //            returnVal.Y = yMin;
-            //        }
-            //        else
-            //        {
-            //            returnVal.Y = yMax;
-            //        }
-            //    }
-
-            //}
-            //return returnVal;
         }
+
+        #region hand
+        //private new Rectangle Wander(int deltaX, int deltaY)
+        //{
+        //    Rectangle tentativeRectangle = new Rectangle(TrueBounds.Location.X + deltaX, TrueBounds.Location.Y + deltaY, TrueBounds.Width, TrueBounds.Height);
+        //    foreach (RECT rect in CurrentWindows)
+        //    { 
+        //    }
+        //}
+
+
+        // & xMin > Screen.PrimaryScreen.Bounds.Left | xMax < Screen.PrimaryScreen.Bounds.Right;
+        //    bool shouldGoUp = val.X - xMin <  & xMin > Screen.PrimaryScreen.Bounds.Left | xMax < Screen.PrimaryScreen.Bounds.Right;
+
+        //    int shouldYMin = val.Y - yMin;
+        //    int shouldYMax = yMax - val.Y;
+
+        //    bool isXMin = shouldGoLeft < shouldXMax;
+        //    bool isYMin = shouldYMin < shouldYMax;
+
+        //    int bestXScore = isXMin ? shouldGoLeft : shouldXMax;
+        //    int bestYScore = isYMin ? shouldYMin : shouldYMax;
+
+        //    if (bestXScore < bestYScore)
+        //    {
+        //        if (isXMin)
+        //        {
+        //            returnVal.X = xMin;
+        //        }
+        //        else
+        //        {
+        //            returnVal.X = xMax;
+        //        }
+        //    }
+        //    else
+        //    {
+        //        if (isYMin)
+        //        {
+        //            returnVal.Y = yMin;
+        //        }
+        //        else
+        //        {
+        //            returnVal.Y = yMax;
+        //        }
+        //    }
+
+        //}
+        //return returnVal;
+        #endregion
 
         private void Ghost_FormClosing(object sender, FormClosingEventArgs e)
         {

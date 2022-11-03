@@ -146,7 +146,6 @@ namespace WinFormsHalloweenProject
             Node startNode = SetupNodes(rectangles, ghostLocation);
             RectangleComparer.Instance.Start = new Vector2(startNode.Location.X, startNode.Location.Y);
             biggestRectangles = Pain.FindBiggestSpace(rectangles.ToRectangles(), Screen.Size);
-            //dont forget that if the ghost is already in the biggest rectangle it needs to bounce around
             Node endNode = null;
             
             if (biggestRectangles.Count > 0)
@@ -175,13 +174,6 @@ namespace WinFormsHalloweenProject
             {
                 for (int compareNodeIndex = currentNodeIndex + 1; compareNodeIndex < Nodes.Count; compareNodeIndex++)
                 {
-                    #region mikah idk
-
-                    //if (Nodes[currentNodeIndex] == startNode || Nodes[compareNodeIndex] == startNode)
-                    //{
-
-                    //}
-                    #endregion
                     if (!AreConnected(Nodes[currentNodeIndex], Nodes[compareNodeIndex]) && InLineOfSight(Nodes[currentNodeIndex], Nodes[compareNodeIndex], rectangles))
                     {
                         AddEdge(Nodes[currentNodeIndex], Nodes[compareNodeIndex]);
