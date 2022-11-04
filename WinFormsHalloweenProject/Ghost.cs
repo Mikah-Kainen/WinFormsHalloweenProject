@@ -29,7 +29,8 @@ namespace WinFormsHalloweenProject
         [return: MarshalAs(UnmanagedType.Bool)]
         static extern bool GetWindowRect(HandleRef hWnd, out RECT lpRect);
         [StructLayout(LayoutKind.Sequential)]
-        public struct RECT
+
+        public struct RECT : IRectangle
         {
             public int Left;
             public int Top;
@@ -37,6 +38,23 @@ namespace WinFormsHalloweenProject
             public int Bottom;
             public int Width => Right - Left;
             public int Height => Bottom - Top;
+
+            public float X { get => Left; set => Left = (int)value; }
+            public float Y { get => Top; set => Top = (int)value; }
+
+            float IRectangle.Width => Width;
+
+            float IRectangle.Height => Height;
+
+            float IRectangle.Left => Left;
+
+            float IRectangle.Right => Left;
+
+            float IRectangle.Top => Top;
+
+            float IRectangle.Bottom => Bottom;
+            public Vector2 Location => new Vector2(X, Y);
+
 
             public RECT(int left, int top, int right, int bottom)
             {
@@ -46,7 +64,7 @@ namespace WinFormsHalloweenProject
                 Bottom = bottom;
             }
 
-            public bool Contains(Point targetPoint) => Left < targetPoint.X & Right > targetPoint.X & Top < targetPoint.Y & Bottom > targetPoint.Y;
+            //  public bool Contains(Point targetPoint) => Left < targetPoint.X & Right > targetPoint.X & Top < targetPoint.Y & Bottom > targetPoint.Y;
 
             //public static implicit operator Rectangle(RECT rect) => rect.ToRectangle();
         }
@@ -184,9 +202,9 @@ namespace WinFormsHalloweenProject
         Vector2 startingBounds;
         Vector2 scale = Vector2.One;
 
-        Rectangle TrueBounds
+        FloatTangle TrueBounds
         {
-            get => new Rectangle((int)(Bounds.X + leftOffset * scale.X), (int)(Bounds.Y + topOffset * scale.Y), (int)(Bounds.Width - leftOffset * scale.X - rightOffset * scale.X), (int)(Bounds.Height - topOffset * scale.Y - bottomOffset * scale.Y));
+            get => new FloatTangle((int)(Bounds.X + leftOffset * scale.X), (int)(Bounds.Y + topOffset * scale.Y), (int)(Bounds.Width - leftOffset * scale.X - rightOffset * scale.X), (int)(Bounds.Height - topOffset * scale.Y - bottomOffset * scale.Y));
             set
             {
                 scale = new Vector2(value.Width / startingBounds.X, value.Height / startingBounds.Y);
@@ -214,7 +232,7 @@ namespace WinFormsHalloweenProject
         Rectangle endGoal;
         float[] distances;
 
-        Point trueLocation;
+        Vector2 trueLocation;
 
         const int degree = 3;
         const double lerpIncrement = .05;
@@ -509,7 +527,7 @@ namespace WinFormsHalloweenProject
                     var newBounds = TrueBounds.GetClosestBounds(spaces);
                     TrueBounds = newBounds;
                     #region Mikah IDK
-                    if (TrueBounds != newBounds)
+                    if (TrueBounds.Equals(newBounds))
                     {
                         //T OD O RO L IS T:
                         //make the GetClosestBounds take into account aspect ratio
@@ -517,9 +535,9 @@ namespace WinFormsHalloweenProject
                         //make it so the ghost increases in size when it has the chance
                     }
                     #endregion
-                    trueLocation = TrueBounds.GetCenter(); 
+                    trueLocation = TrueBounds.GetCenter();
 
-                    CurrentPath = graph.GetPath(CurrentWindows, trueLocation, out pathResult, out endGoal, out spaces);
+                    CurrentPath = graph.GetPath(CurrentWindows, trueLocation.ToPoint(), out pathResult, out endGoal, out spaces);
                 }
 
                 distances = new float[CurrentPath.Length - 1];
@@ -539,10 +557,10 @@ namespace WinFormsHalloweenProject
             MovementVector = oldLocation - (Size)Location;
             oldLocation = (Size)Location;
 
-            trueLocation = new Point(Math.Clamp(trueLocation.X, Screen.PrimaryScreen.Bounds.Left, Screen.PrimaryScreen.Bounds.Right - TrueBounds.Width), Math.Clamp(trueLocation.Y, Screen.PrimaryScreen.Bounds.Top, Screen.PrimaryScreen.Bounds.Bottom - TrueBounds.Height));
+            trueLocation = new Vector2(Math.Clamp(trueLocation.X, Screen.PrimaryScreen.Bounds.Left, Screen.PrimaryScreen.Bounds.Right - TrueBounds.Width), Math.Clamp(trueLocation.Y, Screen.PrimaryScreen.Bounds.Top, Screen.PrimaryScreen.Bounds.Bottom - TrueBounds.Height));
 
 
-            if (vibing = vibing || endGoal.Contains(TrueBounds))
+            if (vibing = vibing || endGoal.Contains(TrueBounds.ToRectangle()))
             {
                 Console.WriteLine("vibing");
                 //vibe
@@ -587,7 +605,7 @@ namespace WinFormsHalloweenProject
 
             trueLocation = CurrentPath[pathIndex + 1].Lerp(trueLocation, (currentDistance - (targetDistance - distances[pathIndex])) / distances[pathIndex]);
 
-            TrueBounds = new Rectangle(trueLocation.X - TrueBounds.Width / 2, trueLocation.Y - TrueBounds.Width / 2, TrueBounds.Width, TrueBounds.Height);
+            TrueBounds = new FloatTangle(trueLocation.X - TrueBounds.Width / 2, trueLocation.Y - TrueBounds.Width / 2, TrueBounds.Width, TrueBounds.Height);
         }
         //Location = new Point(trueLocation.X - TrueBounds.Width / 2 + rand.Next(-5, 5), trueLocation.Y - TrueBounds.Width / 2 + +rand.Next(-5, 5));
 
