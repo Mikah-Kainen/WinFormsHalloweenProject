@@ -506,7 +506,7 @@ namespace WinFormsHalloweenProject
                     // evilRect = new RECT(Math.Min(endGoal.Left, evilRect.Left), Math.Min(endGoal.Top, evilRect.Top), Math.Max(endGoal.Right, evilRect.Right), Math.Max(endGoal.Bottom, evilRect.Bottom));
 
                     //var newBounds = Declamp(TrueBounds, evilRect.Left, evilRect.Right, evilRect.Top, evilRect.Bottom);
-                    var newBounds = TrueBounds.GetClosestBounds(spaces);
+                    var newBounds = TrueBounds.GetClosestBounds(graph.AspectRatio, spaces);
                     TrueBounds = newBounds;
                     #region Mikah IDK
                     if (TrueBounds != newBounds)

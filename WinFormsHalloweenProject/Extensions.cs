@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -35,6 +36,12 @@ namespace WinFormsHalloweenProject
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int SetIfTrue(this int a, int b, bool condition)
+        {
+            var result = condition.ToByte();
+            return b * result - (a * (result - 1));
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float SetIfTrue(this float a, float b, bool condition)
         {
             var result = condition.ToByte();
             return b * result - (a * (result - 1));
@@ -150,9 +157,27 @@ namespace WinFormsHalloweenProject
         /// <param name="position">the output of the new position</param>
         /// <param name="newSize">the output of the size that needed to fit within b</param>
         /// <returns>the distance to the new spot</returns>
-        public static double GetClosestPosition(this Rectangle a, Rectangle b, out Point position, out Size newSize)
+        /// 
+        interface IAwesomeness
         {
-            newSize = new Size(Min(a.Width, b.Width), Min(a.Height, b.Height));
+            int BeAwesome()
+            {
+                int a = 0;
+                a++;
+                a--;
+                a++;
+                return 'I' + ' ' + 'a' + 'm' + ' ' + 'a' + 'w' + 'e' + 's' + 'o' + 'm' + 'e';
+            }
+        } 
+        public static double GetClosestPosition(this Rectangle a, Rectangle b, Vector2 aspectRatio, out Point position, out Size newSize)
+        {
+            aspectRatio /= Math.Max(aspectRatio.X, aspectRatio.Y);
+
+            Vector2 delta = new Vector2((a.Width - Min(a.Width, b.Width)) / aspectRatio.X, (a.Height - Min(a.Height, b.Height) / aspectRatio.Y));
+            float biggestDifference = delta.X;
+            biggestDifference = biggestDifference.SetIfTrue(delta.Y, delta.Y > delta.X);
+
+            newSize = new Size((int)(a.Width - biggestDifference * aspectRatio.X), (int)(a.Height - biggestDifference * aspectRatio.Y));
             position = Point.Empty;
             position.Y = Max(a.Top, b.Top);
             position.Y = position.Y.SetIfTrue(b.Bottom - newSize.Height, b.Bottom < a.Bottom);
@@ -161,13 +186,13 @@ namespace WinFormsHalloweenProject
 
             return a.Location.Distance(position); 
         }
-        public static Rectangle GetClosestBounds(this Rectangle a, IEnumerable<Rectangle> bounds)
+        public static Rectangle GetClosestBounds(this Rectangle a, Vector2 aspectRatio, IEnumerable<Rectangle> bounds)
         {
             double bestDist = int.MaxValue;
             Rectangle newBounds = Rectangle.Empty;
             foreach(var bee in bounds)
             {
-                double tempDist = a.GetClosestPosition(bee, out var pos, out var size);
+                double tempDist = a.GetClosestPosition(bee, aspectRatio, out var pos, out var size);
                 if (tempDist < bestDist)
                 {
                     bestDist = tempDist;
@@ -175,6 +200,38 @@ namespace WinFormsHalloweenProject
                 }
             }
             return newBounds;
+        }
+
+        public static RECT GetBiggestRECT(this RECT currentRECT, Size maxSize, HashSet<RECT> obstacles)
+        {
+            double distance = Math.Sqrt((pointB.X - pointA.X) * (pointB.X - pointA.X) + (pointB.Y - pointA.Y) * (pointB.Y - pointA.Y));
+            double percentIncrement = 1 / distance;
+            double currentPercent = percentIncrement;
+            double xValue;
+            double yValue;
+            Point currentPoint;
+
+            bool straight = pointA.X == pointB.X | pointA.Y == pointB.Y;
+
+            while (currentPercent < 1)
+            {
+                xValue = ((double)pointA.X).Lerp(pointB.X, currentPercent) + .99999;
+                yValue = ((double)pointA.Y).Lerp(pointB.Y, currentPercent) + .99999;
+
+                currentPercent += percentIncrement;
+
+                currentPoint = new Point((int)xValue, (int)yValue);
+                int generousContainment = 0;
+                foreach (Ghost.RECT rect in activeRectangles)
+                {
+                    generousContainment += rect.Pad(1).GenerousContains(currentPoint).ToByte();
+                    if ((straight.ToByte() + generousContainment > 1 || rect.Contains(currentPoint)))
+                    {
+                        return false;
+                    }
+                }
+            }
+            return true;
         }
         public static Rectangle ToRectangle(this RECT rect)
         {
