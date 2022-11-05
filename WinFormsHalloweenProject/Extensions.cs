@@ -96,66 +96,66 @@ namespace WinFormsHalloweenProject
         }
 
 
-        public static RECT ClampToLeft(this RECT currentRECT, RECT containerRECT) =>
-            new RECT(containerRECT.Left - currentRECT.Width, currentRECT.Top, containerRECT.Left, currentRECT.Bottom);
+        public static FloatTangle ClampToLeft(this IRectangle currentRECT, IRectangle containerRECT) =>
+            new FloatTangle(containerRECT.Left - currentRECT.Width, currentRECT.Top, containerRECT.Left, currentRECT.Bottom);
 
-        public static RECT ClampToTop(this RECT currentRECT, RECT containerRECT) =>
-            new RECT(currentRECT.Left, containerRECT.Top - currentRECT.Height, currentRECT.Right, containerRECT.Top);
+        public static FloatTangle ClampToTop(this IRectangle currentRECT, IRectangle containerRECT) =>
+            new FloatTangle(currentRECT.Left, containerRECT.Top - currentRECT.Height, currentRECT.Right, containerRECT.Top);
 
-        public static RECT ClampToRight(this RECT currentRECT, RECT containerRECT) =>
-            new RECT(containerRECT.Right, currentRECT.Top, containerRECT.Right + currentRECT.Width, currentRECT.Bottom);
+        public static FloatTangle ClampToRight(this IRectangle currentRECT, IRectangle containerRECT) =>
+            new FloatTangle(containerRECT.Right, currentRECT.Top, containerRECT.Right + currentRECT.Width, currentRECT.Bottom);
 
-        public static RECT ClampToBottom(this RECT currentRECT, RECT containerRECT) =>
-            new RECT(currentRECT.Left, containerRECT.Bottom, currentRECT.Right, containerRECT.Bottom + currentRECT.Height);
+        public static FloatTangle ClampToBottom(this IRectangle currentRECT, IRectangle containerRECT) =>
+            new FloatTangle(currentRECT.Left, containerRECT.Bottom, currentRECT.Right, containerRECT.Bottom + currentRECT.Height);
 
         public static bool Intersects(this IRectangle rect1, IRectangle rect2) => rect1.Intersects(rect2);
 
-        public static bool ContainsLeft(this RECT containerRECT, RECT isContainedRECT) => containerRECT.Left <= isContainedRECT.Right & containerRECT.Left >= isContainedRECT.Left & (containerRECT.Top <= isContainedRECT.Bottom & containerRECT.Bottom >= isContainedRECT.Top); //containerRECT contains the left of isContainedRECT
-        public static bool ContainsTop(this RECT containerRECT, RECT isContainedRECT) => containerRECT.Top <= isContainedRECT.Bottom & containerRECT.Top >= isContainedRECT.Top & (containerRECT.Left <= isContainedRECT.Right & containerRECT.Right >= isContainedRECT.Left); //containerRECT contains the top of isContainedRECT
-        public static bool ContainsRight(this RECT containerRECT, RECT isContainedRECT) => containerRECT.Right >= isContainedRECT.Left & containerRECT.Right <= isContainedRECT.Right & (containerRECT.Top <= isContainedRECT.Bottom & containerRECT.Bottom >= isContainedRECT.Top); //containerRECT contains the right of isContainedRECT
-        public static bool ContainsBottom(this RECT containerRECT, RECT isContainedRECT) => containerRECT.Bottom >= isContainedRECT.Top & containerRECT.Bottom <= isContainedRECT.Bottom & (containerRECT.Left <= isContainedRECT.Right & containerRECT.Right >= isContainedRECT.Left); //containerRECT contains the bottom of isContainedRECT
+        public static bool ContainsLeft(this IRectangle containerRECT, IRectangle isContainedRECT) => containerRECT.Left <= isContainedRECT.Right & containerRECT.Left >= isContainedRECT.Left & (containerRECT.Top <= isContainedRECT.Bottom & containerRECT.Bottom >= isContainedRECT.Top); //containerIRectangle contains the left of isContainedRECT
+        public static bool ContainsTop(this IRectangle containerRECT, IRectangle isContainedRECT) => containerRECT.Top <= isContainedRECT.Bottom & containerRECT.Top >= isContainedRECT.Top & (containerRECT.Left <= isContainedRECT.Right & containerRECT.Right >= isContainedRECT.Left); //containerIRectangle contains the top of isContainedRECT
+        public static bool ContainsRight(this IRectangle containerRECT, IRectangle isContainedRECT) => containerRECT.Right >= isContainedRECT.Left & containerRECT.Right <= isContainedRECT.Right & (containerRECT.Top <= isContainedRECT.Bottom & containerRECT.Bottom >= isContainedRECT.Top); //containerIRectangle contains the right of isContainedRECT
+        public static bool ContainsBottom(this IRectangle containerRECT, IRectangle isContainedRECT) => containerRECT.Bottom >= isContainedRECT.Top & containerRECT.Bottom <= isContainedRECT.Bottom & (containerRECT.Left <= isContainedRECT.Right & containerRECT.Right >= isContainedRECT.Left); //containerIRectangle contains the bottom of isContainedRECT
 
-        public static int GetLeftOverlap(this RECT isContainedRECT, RECT containerRECT)
+        public static float GetLeftOverlap(this IRectangle isContainedRECT, IRectangle containerRECT)
         {
             if (!ContainsLeft(containerRECT, isContainedRECT))
             {
                 return 0;
             }
-            int bottomDifference = Math.Abs(containerRECT.Bottom - isContainedRECT.Bottom);
-            int topDifference = Math.Abs(containerRECT.Top - isContainedRECT.Top);
+            float bottomDifference = Math.Abs(containerRECT.Bottom - isContainedRECT.Bottom);
+            float topDifference = Math.Abs(containerRECT.Top - isContainedRECT.Top);
             return (containerRECT.Height + isContainedRECT.Height - bottomDifference - topDifference) / 2;
         }
 
-        public static int GetTopOverlap(this RECT isContainedRECT, RECT containerRECT)
+        public static float GetTopOverlap(this IRectangle isContainedRECT, IRectangle containerRECT)
         {
             if (!ContainsTop(containerRECT, isContainedRECT))
             {
                 return 0;
             }
-            int leftDifference = Math.Abs(containerRECT.Left - isContainedRECT.Left);
-            int rightDifference = Math.Abs(containerRECT.Right - isContainedRECT.Right);
+            float leftDifference = Math.Abs(containerRECT.Left - isContainedRECT.Left);
+            float rightDifference = Math.Abs(containerRECT.Right - isContainedRECT.Right);
             return (containerRECT.Width + isContainedRECT.Width - leftDifference - rightDifference) / 2;
         }
 
-        public static int GetRightOverlap(this RECT isContainedRECT, RECT containerRECT)
+        public static float GetRightOverlap(this IRectangle isContainedRECT, IRectangle containerRECT)
         {
             if (!ContainsRight(containerRECT, isContainedRECT))
             {
                 return 0;
             }
-            int bottomDifference = Math.Abs(containerRECT.Bottom - isContainedRECT.Bottom);
-            int topDifference = Math.Abs(containerRECT.Top - isContainedRECT.Top);
+            float bottomDifference = Math.Abs(containerRECT.Bottom - isContainedRECT.Bottom);
+            float topDifference = Math.Abs(containerRECT.Top - isContainedRECT.Top);
             return (containerRECT.Height + isContainedRECT.Height - bottomDifference - topDifference) / 2;
         }
 
-        public static int GetBottomOverlap(this RECT isContainedRECT, RECT containerRECT)
+        public static float GetBottomOverlap(this IRectangle isContainedRECT, IRectangle containerRECT)
         {
             if (!ContainsBottom(containerRECT, isContainedRECT))
             {
                 return 0;
             }
-            int leftDifference = Math.Abs(containerRECT.Left - isContainedRECT.Left);
-            int rightDifference = Math.Abs(containerRECT.Right - isContainedRECT.Right);
+            float leftDifference = Math.Abs(containerRECT.Left - isContainedRECT.Left);
+            float rightDifference = Math.Abs(containerRECT.Right - isContainedRECT.Right);
             return (containerRECT.Width + isContainedRECT.Width - leftDifference - rightDifference) / 2;
         }
 
@@ -169,7 +169,7 @@ namespace WinFormsHalloweenProject
         public static RECT Pad(this RECT rect, int leftPad, int topPad, int rightPad, int bottomPad) => new RECT(rect.Left - leftPad, rect.Top - topPad, rect.Right + rightPad, rect.Bottom + bottomPad);
         public static double Distance(this Point A, Point B) => Math.Sqrt((B.X - A.X) * (B.X - A.X) + (B.Y - A.Y) * (B.Y - A.Y));
         public static Vector2 ToVector2(this Point a) => new Vector2(a.X, a.Y);
-        public static Point ToVector2(this Vector2 a) => new Point((int)a.X, (int)a.Y);
+        public static Point ToPoint(this Vector2 a) => new Point((int)a.X, (int)a.Y);
 
         /// <summary>
         /// finds the closest spot in which a rectangle can be fully contained by another
@@ -205,15 +205,15 @@ namespace WinFormsHalloweenProject
             }
             return newBounds;
         }
-        public static Rectangle ToRectangle(this RECT rect)
+        public static Rectangle ToRectangle(this IRectangle rect)
         {
-            return new Rectangle(new Point(rect.Left, rect.Top), new Size(rect.Right - rect.Left, rect.Bottom - rect.Top));
+            return new Rectangle(new Point((int)rect.Left, (int)rect.Top), new Size((int)(rect.Right - rect.Left), (int)(rect.Bottom - rect.Top)));
         }
 
-        public static HashSet<Rectangle> ToRectangles(this HashSet<RECT> rects)
+        public static HashSet<Rectangle> ToRectangles<T>(this HashSet<T> rects) where T : IRectangle
         {
             HashSet<Rectangle> returnSet = new HashSet<Rectangle>();
-            foreach (RECT rect in rects)
+            foreach (IRectangle rect in rects)
             {
                 returnSet.Add(rect.ToRectangle());
             }

@@ -311,7 +311,7 @@ namespace WinFormsHalloweenProject
 
             //ShowInTaskbar = false;
             graph = new Graph(Screen.PrimaryScreen.Bounds, new System.Numerics.Vector2(TrueBounds.Width, TrueBounds.Height));
-            trueLocation = Location;
+            trueLocation = Location.ToVector2();
             startingBounds = new Vector2(TrueBounds.Width, TrueBounds.Height);
         }
 
@@ -496,7 +496,7 @@ namespace WinFormsHalloweenProject
             }
             if (diff | PreviousWindows.Count > 0)
             {
-                CurrentPath = graph.GetPath(CurrentWindows, trueLocation, out pathResult, out endGoal, out spaces);
+                CurrentPath = graph.GetPath(CurrentWindows, trueLocation.ToPoint(), out pathResult, out endGoal, out spaces);
                 return true;
             }
             spaces = null;
@@ -603,30 +603,30 @@ namespace WinFormsHalloweenProject
 
 
 
-            trueLocation = CurrentPath[pathIndex + 1].Lerp(trueLocation, (currentDistance - (targetDistance - distances[pathIndex])) / distances[pathIndex]);
+            trueLocation = CurrentPath[pathIndex + 1].ToVector2().Lerp(trueLocation, (currentDistance - (targetDistance - distances[pathIndex])) / distances[pathIndex]);
 
             TrueBounds = new FloatTangle(trueLocation.X - TrueBounds.Width / 2, trueLocation.Y - TrueBounds.Width / 2, TrueBounds.Width, TrueBounds.Height);
         }
         //Location = new Point(trueLocation.X - TrueBounds.Width / 2 + rand.Next(-5, 5), trueLocation.Y - TrueBounds.Width / 2 + +rand.Next(-5, 5));
 
-        private new Rectangle Wander()
+        private new FloatTangle Wander()
         {
             Console.WriteLine("Wandering");
             int deltaX = currentSpeed.X * currentDirection.X;
             int deltaY = currentSpeed.Y * currentDirection.Y;
-            RECT tentativeRectangle = new RECT(TrueBounds.Left + deltaX, TrueBounds.Top + deltaY, TrueBounds.Right + deltaX, TrueBounds.Bottom + deltaY);
+            FloatTangle tentativeRectangle = new FloatTangle(TrueBounds.Left + deltaX, TrueBounds.Top + deltaY, TrueBounds.Right + deltaX, TrueBounds.Bottom + deltaY);
             bool switchXDirection = false;
             bool switchYDirection = false;
             foreach (RECT rect in CurrentWindows)
             {
                 if (rect.Intersects(tentativeRectangle))
                 {
-                    int leftOverlap = tentativeRectangle.GetLeftOverlap(rect);
-                    int topOverlap = tentativeRectangle.GetTopOverlap(rect);
-                    int rightOverlap = tentativeRectangle.GetRightOverlap(rect);
-                    int bottomOverlap = tentativeRectangle.GetBottomOverlap(rect);
+                    float leftOverlap = tentativeRectangle.GetLeftOverlap(rect);
+                    float topOverlap = tentativeRectangle.GetTopOverlap(rect);
+                    float rightOverlap = tentativeRectangle.GetRightOverlap(rect);
+                    float bottomOverlap = tentativeRectangle.GetBottomOverlap(rect);
 
-                    int maxOverlap = Math.Max(Math.Max(leftOverlap, topOverlap), Math.Max(rightOverlap, bottomOverlap));
+                    float maxOverlap = Math.Max(Math.Max(leftOverlap, topOverlap), Math.Max(rightOverlap, bottomOverlap));
                     if (leftOverlap == maxOverlap)
                     {
                         Console.WriteLine("LeftOverlapped");
@@ -689,7 +689,7 @@ namespace WinFormsHalloweenProject
             {
                 currentDirection.Y *= -1;
             }
-            return tentativeRectangle.ToRectangle();
+            return tentativeRectangle;
         }
         //public Point Declamp(Point val, int xMin, int xMax, int yMin, int yMax)
         //{
