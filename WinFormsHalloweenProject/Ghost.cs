@@ -48,7 +48,7 @@ namespace WinFormsHalloweenProject
 
             float IRectangle.Left => Left;
 
-            float IRectangle.Right => Left;
+            float IRectangle.Right => Right;
 
             float IRectangle.Top => Top;
 
@@ -202,13 +202,23 @@ namespace WinFormsHalloweenProject
         Vector2 startingBounds;
         Vector2 scale = Vector2.One;
 
-        FloatTangle TrueBounds
+        FloatTangle backingBoundsBackingField;
+        FloatTangle BackingBounds
         {
-            get => new FloatTangle((int)(Bounds.X + leftOffset * scale.X), (int)(Bounds.Y + topOffset * scale.Y), (int)(Bounds.Width - leftOffset * scale.X - rightOffset * scale.X), (int)(Bounds.Height - topOffset * scale.Y - bottomOffset * scale.Y));
+            get => backingBoundsBackingField;
             set
             {
+                Bounds = (backingBoundsBackingField = value).ToRectangle();
+            }
+        }
+        FloatTangle TrueBounds
+        {
+            get => new FloatTangle(BackingBounds.X + leftOffset * scale.X, BackingBounds.Y + topOffset * scale.Y, BackingBounds.Width - leftOffset * scale.X - rightOffset * scale.X, BackingBounds.Height - topOffset * scale.Y - bottomOffset * scale.Y);
+            set
+            {
+                var origScale = scale;
                 scale = new Vector2(value.Width / startingBounds.X, value.Height / startingBounds.Y);
-                Bounds = new Rectangle((int)(value.X - leftOffset * scale.X), (int)(value.Y - topOffset * scale.Y), (int)(value.Width + leftOffset * scale.X + rightOffset * scale.X), (int)(value.Height + topOffset * scale.Y + bottomOffset * scale.Y));
+                BackingBounds = new FloatTangle(value.X - leftOffset * scale.X, value.Y - topOffset * scale.Y, value.Width + leftOffset * scale.X + rightOffset * scale.X, value.Height + topOffset * scale.Y + bottomOffset * scale.Y);
             }
         }
 
@@ -303,7 +313,7 @@ namespace WinFormsHalloweenProject
                   Dog10,
             };
 
-            Bounds = new Rectangle(startingPoint, new Size((int)(BackgroundImage.Width * ghostScale), (int)(BackgroundImage.Height * ghostScale)));
+            BackingBounds = new FloatTangle(startingPoint.ToVector2(), new Vector2(BackgroundImage.Width * (float)ghostScale, BackgroundImage.Height * (float)ghostScale));
             //speeds = new Size(2, 2);
 
 
@@ -564,8 +574,8 @@ namespace WinFormsHalloweenProject
             {
                 Console.WriteLine("vibing");
                 //vibe
-                TrueBounds = Wander();
-                //TrueBounds = new Rectangle(trueLocation.X - TrueBounds.Width / 2, trueLocation.Y - TrueBounds.Width / 2, TrueBounds.Width, TrueBounds.Height);
+                //TrueBounds = Wander();
+                TrueBounds = new FloatTangle(trueLocation.X - TrueBounds.Width / 2, trueLocation.Y - TrueBounds.Width / 2, TrueBounds.Width, TrueBounds.Height);
                 //    Location = new Point(trueLocation.X - TrueBounds.Width / 2 + rand.Next(-5, 5), trueLocation.Y - TrueBounds.Width / 2 + +rand.Next(-5, 5));
                 return;
             }
@@ -603,7 +613,7 @@ namespace WinFormsHalloweenProject
 
 
 
-            trueLocation = CurrentPath[pathIndex + 1].ToVector2().Lerp(trueLocation, (currentDistance - (targetDistance - distances[pathIndex])) / distances[pathIndex]);
+            trueLocation = trueLocation.Lerp(CurrentPath[pathIndex + 1].ToVector2(), (currentDistance - (targetDistance - distances[pathIndex])) / distances[pathIndex]);
 
             TrueBounds = new FloatTangle(trueLocation.X - TrueBounds.Width / 2, trueLocation.Y - TrueBounds.Width / 2, TrueBounds.Width, TrueBounds.Height);
         }

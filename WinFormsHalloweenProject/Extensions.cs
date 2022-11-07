@@ -69,12 +69,12 @@ namespace WinFormsHalloweenProject
             return a * result - (b * (result - 1));
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float SetIfTrue(this float a, float b, bool condition)
-        {
-            var result = condition.ToByte();
-            return b * result - (a * (result - 1));
-        }
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //public static float SetIfTrue(this float a, float b, bool condition)
+        //{
+        //    var result = condition.ToByte();
+        //    return b * result - (a * (result - 1));
+        //}
         public static int NextError(this Random rand, int degree) => rand.Next(-degree, degree + 1);
 
         public static double NextError(this Random rand, double degree) => rand.NextDouble() * degree * (rand.Next(0, 2) * 2 - 1);
@@ -187,7 +187,6 @@ namespace WinFormsHalloweenProject
         /// <returns>the distance to the new spot</returns>
         /// 
         interface IAwesomeness
-        public static double GetClosestPosition(this IRectangle a, Rectangle b, out Vector2 position, out Vector2 newSize)
         {
             int BeAwesome()
             {
@@ -197,8 +196,9 @@ namespace WinFormsHalloweenProject
                 a++;
                 return 'I' + ' ' + 'a' + 'm' + ' ' + 'a' + 'w' + 'e' + 's' + 'o' + 'm' + 'e';
             }
-        } 
-        public static double GetClosestPosition(this Rectangle a, Rectangle b, Vector2 aspectRatio, out Point position, out Size newSize)
+        }
+        //public static double GetClosestPosition(this IRectangle a, Rectangle b, out Vector2 position, out Vector2 newSize)
+        public static double GetClosestPosition(this IRectangle a, Rectangle b, Vector2 aspectRatio, out Vector2 position, out Vector2 newSize)
         {
             aspectRatio /= Math.Max(aspectRatio.X, aspectRatio.Y);
 
@@ -206,12 +206,12 @@ namespace WinFormsHalloweenProject
             float biggestDifference = delta.X;
             biggestDifference = biggestDifference.SetIfTrue(delta.Y, delta.Y > delta.X);
 
-            newSize = new Size((int)(a.Width - biggestDifference * aspectRatio.X), (int)(a.Height - biggestDifference * aspectRatio.Y));
-            position = Point.Empty;
+            newSize = new Vector2(a.Width - biggestDifference * aspectRatio.X, a.Height - biggestDifference * aspectRatio.Y);
+            position = Vector2.Zero;
             position.Y = Max(a.Top, b.Top);
-            position.Y = position.Y.SetIfTrue(b.Bottom - newSize.Height, b.Bottom < a.Bottom);
+            position.Y = position.Y.SetIfTrue(b.Bottom - newSize.Y, b.Bottom < a.Bottom);
             position.X = Max(a.Left, b.Left);
-            position.X = position.X.SetIfTrue(b.Right - newSize.Width, b.Right < a.Right);
+            position.X = position.X.SetIfTrue(b.Right - newSize.X, b.Right < a.Right);
             newSize = new Vector2(Min((int)a.Width, b.Width), Min((int)a.Height, b.Height));
             position = Vector2.Zero;
             position.Y = Max((int)a.Top, b.Top);
@@ -221,8 +221,8 @@ namespace WinFormsHalloweenProject
 
             return Vector2.Distance(position, a.Location);
         }
-        public static FloatTangle GetClosestBounds(this IRectangle a, IEnumerable<Rectangle> bounds)
-        public static Rectangle GetClosestBounds(this Rectangle a, Vector2 aspectRatio, IEnumerable<Rectangle> bounds)
+        //public static FloatTangle GetClosestBounds(this IRectangle a, IEnumerable<Rectangle> bounds)
+        public static FloatTangle GetClosestBounds(this IRectangle a, Vector2 aspectRatio, IEnumerable<Rectangle> bounds)
         {
             double bestDist = int.MaxValue;
             FloatTangle newBounds = default;
@@ -237,7 +237,7 @@ namespace WinFormsHalloweenProject
             }
             return newBounds;
         }
-
+        /*
         public static RECT GetBiggestRECT(this RECT currentRECT, Size maxSize, HashSet<RECT> obstacles)
         {
             double distance = Math.Sqrt((pointB.X - pointA.X) * (pointB.X - pointA.X) + (pointB.Y - pointA.Y) * (pointB.Y - pointA.Y));
@@ -269,7 +269,8 @@ namespace WinFormsHalloweenProject
             }
             return true;
         }
-        public static Rectangle ToRectangle(this RECT rect)
+        */
+        public static Rectangle ToRectangle(this IRectangle rect)
         {
             return new Rectangle(new Point((int)rect.Left, (int)rect.Top), new Size((int)(rect.Right - rect.Left), (int)(rect.Bottom - rect.Top)));
         }
