@@ -28,10 +28,10 @@ namespace WinFormsHalloweenProject
                 Size = 0;
                 float currSize = 0;
                 int currIterations = 0;
-                double totalLerps = (int)Math.Max((Math.Sqrt(Math.Pow(NodeA.Location.X - NodeB.Location.X, 2) + Math.Pow(NodeA.Location.Y - NodeB.Location.Y, 2)) / pixelsToLerp), 3);
-                double lerpStep = 1 / totalLerps;
+                float totalLerps = (int)Math.Max((Math.Sqrt(Math.Pow(NodeA.Location.X - NodeB.Location.X, 2) + Math.Pow(NodeA.Location.Y - NodeB.Location.Y, 2)) / pixelsToLerp), 3);
+                float lerpStep = 1 / totalLerps;
 
-                double lerpAmount = lerpStep;
+                float lerpAmount = lerpStep;
                 for (int i = 1; i < totalLerps - 1; i++)
                 {                    
                     lerpAmount += lerpStep;

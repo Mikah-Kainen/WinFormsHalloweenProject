@@ -91,7 +91,7 @@ namespace WinFormsHalloweenProject
                     if (rect.Equals(otherRect)) continue;
                     for (int i = 0; i < sideNodes.Length; i++)
                     {
-                        if (sideNodes[i] != null && otherRect.Pad(1).Contains(sideNodes[i].Location))
+                        if (sideNodes[i] != null && otherRect.Pad(1).MoneyGrubbingContains(sideNodes[i].Location))
                         {
                             sideNodes[i] = null;
                         }
@@ -162,7 +162,7 @@ namespace WinFormsHalloweenProject
 
             foreach (var rect in rectangles)
             {
-                if (rect.Contains(ghostLocation))
+                if (rect.MoneyGrubbingContains(ghostLocation))
                 {
                     endGoal = rect.ToRectangle();
                     result = PathStatus.GhostInWall;
@@ -495,7 +495,7 @@ namespace WinFormsHalloweenProject
                 foreach (Ghost.RECT rect in activeRectangles)
                 {
                     generousContainment += rect.Pad(1).GenerousContains(currentPoint).ToByte();
-                    if ((straight.ToByte() + generousContainment > 1 || rect.Contains(currentPoint)))
+                    if ((straight.ToByte() + generousContainment > 1 || rect.MoneyGrubbingContains(currentPoint)))
                     {
                         return false;
                     }

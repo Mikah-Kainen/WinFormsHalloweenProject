@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
+using WinformsHalloweenProject;
 
 namespace WinFormsHalloweenProject
 {
@@ -14,7 +15,9 @@ namespace WinFormsHalloweenProject
     public static class Extensions
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Point Lerp(this Point a, Point b, double percent) => new Point(a.X.Lerp(b.X, percent), a.Y.Lerp(b.Y, percent));
+        public static Point Lerp(this Point a, Point b, float percent) => new Point(a.X.Lerp(b.X, percent), a.Y.Lerp(b.Y, percent));
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector2 Lerp(this Vector2 a, Vector2 b, float percent) => new Vector2(a.X.Lerp(b.X, percent), a.Y.Lerp(b.Y, percent));
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe byte ToByte(this bool val) => ToByte(&val);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -35,6 +38,19 @@ namespace WinFormsHalloweenProject
             return a * result - (b * (result - 1));
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float Min(float a, float b)
+        {
+            var result = (a < b).ToByte();
+            return a * result - (b * (result - 1));
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float Max(float a, float b)
+        {
+            var result = (a > b).ToByte();
+            return a * result - (b * (result - 1));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int SetIfTrue(this int a, int b, bool condition)
         {
             var result = condition.ToByte();
@@ -53,6 +69,12 @@ namespace WinFormsHalloweenProject
             return a * result - (b * (result - 1));
         }
 
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //public static float SetIfTrue(this float a, float b, bool condition)
+        //{
+        //    var result = condition.ToByte();
+        //    return b * result - (a * (result - 1));
+        //}
         public static int NextError(this Random rand, int degree) => rand.Next(-degree, degree + 1);
 
         public static double NextError(this Random rand, double degree) => rand.NextDouble() * degree * (rand.Next(0, 2) * 2 - 1);
@@ -74,6 +96,10 @@ namespace WinFormsHalloweenProject
         {
             return new Point(targetRectangle.Left + targetRectangle.Width / 2, targetRectangle.Top + targetRectangle.Height / 2);
         }
+        public static Vector2 GetCenter(this IRectangle rect)
+        {
+            return new Vector2(rect.Left + rect.Width / 2, rect.Top + rect.Height / 2);
+        }
 
 
         public static RECT ClampToLeft(this RECT currentRECT, RECT containerRECT) => 
@@ -88,66 +114,68 @@ namespace WinFormsHalloweenProject
         public static RECT ClampToBottom(this RECT currentRECT, RECT containerRECT) =>
             new RECT(currentRECT.Left, containerRECT.Bottom + 1, currentRECT.Right, containerRECT.Bottom + currentRECT.Height + 1);
 
-        public static bool Intersects(this RECT rect1, RECT rect2) => rect1.Top <= rect2.Bottom & rect1.Bottom >= rect2.Top & rect1.Left <= rect2.Right & rect1.Right >= rect2.Left;
+        public static bool Intersects(this IRectangle rect1, IRectangle rect2) => rect1.Intersects(rect2);
 
-        public static bool ContainsLeft(this RECT containerRECT, RECT isContainedRECT) => containerRECT.Left <= isContainedRECT.Right & containerRECT.Left >= isContainedRECT.Left & (containerRECT.Top <= isContainedRECT.Bottom & containerRECT.Bottom >= isContainedRECT.Top); //containerRECT contains the left of isContainedRECT
-        public static bool ContainsTop(this RECT containerRECT, RECT isContainedRECT) => containerRECT.Top <= isContainedRECT.Bottom & containerRECT.Top >= isContainedRECT.Top & (containerRECT.Left <= isContainedRECT.Right & containerRECT.Right >= isContainedRECT.Left); //containerRECT contains the top of isContainedRECT
-        public static bool ContainsRight(this RECT containerRECT, RECT isContainedRECT) => containerRECT.Right >= isContainedRECT.Left & containerRECT.Right <= isContainedRECT.Right & (containerRECT.Top <= isContainedRECT.Bottom & containerRECT.Bottom >= isContainedRECT.Top); //containerRECT contains the right of isContainedRECT
-        public static bool ContainsBottom(this RECT containerRECT, RECT isContainedRECT) => containerRECT.Bottom >= isContainedRECT.Top & containerRECT.Bottom <= isContainedRECT.Bottom & (containerRECT.Left <= isContainedRECT.Right & containerRECT.Right >= isContainedRECT.Left); //containerRECT contains the bottom of isContainedRECT
+        public static bool ContainsLeft(this IRectangle containerRECT, IRectangle isContainedRECT) => containerRECT.Left <= isContainedRECT.Right & containerRECT.Left >= isContainedRECT.Left & (containerRECT.Top <= isContainedRECT.Bottom & containerRECT.Bottom >= isContainedRECT.Top); //containerIRectangle contains the left of isContainedRECT
+        public static bool ContainsTop(this IRectangle containerRECT, IRectangle isContainedRECT) => containerRECT.Top <= isContainedRECT.Bottom & containerRECT.Top >= isContainedRECT.Top & (containerRECT.Left <= isContainedRECT.Right & containerRECT.Right >= isContainedRECT.Left); //containerIRectangle contains the top of isContainedRECT
+        public static bool ContainsRight(this IRectangle containerRECT, IRectangle isContainedRECT) => containerRECT.Right >= isContainedRECT.Left & containerRECT.Right <= isContainedRECT.Right & (containerRECT.Top <= isContainedRECT.Bottom & containerRECT.Bottom >= isContainedRECT.Top); //containerIRectangle contains the right of isContainedRECT
+        public static bool ContainsBottom(this IRectangle containerRECT, IRectangle isContainedRECT) => containerRECT.Bottom >= isContainedRECT.Top & containerRECT.Bottom <= isContainedRECT.Bottom & (containerRECT.Left <= isContainedRECT.Right & containerRECT.Right >= isContainedRECT.Left); //containerIRectangle contains the bottom of isContainedRECT
 
-        public static int GetLeftOverlap(this RECT isContainedRECT, RECT containerRECT)
+        public static float GetLeftOverlap(this IRectangle isContainedRECT, IRectangle containerRECT)
         {
-            if(!ContainsLeft(containerRECT, isContainedRECT))
+            if (!ContainsLeft(containerRECT, isContainedRECT))
             {
                 return 0;
             }
-            int bottomDifference = Math.Abs(containerRECT.Bottom - isContainedRECT.Bottom);
-            int topDifference = Math.Abs(containerRECT.Top - isContainedRECT.Top);
+            float bottomDifference = Math.Abs(containerRECT.Bottom - isContainedRECT.Bottom);
+            float topDifference = Math.Abs(containerRECT.Top - isContainedRECT.Top);
             return (containerRECT.Height + isContainedRECT.Height - bottomDifference - topDifference) / 2;
         }
 
-        public static int GetTopOverlap(this RECT isContainedRECT, RECT containerRECT)
+        public static float GetTopOverlap(this IRectangle isContainedRECT, IRectangle containerRECT)
         {
             if (!ContainsTop(containerRECT, isContainedRECT))
             {
                 return 0;
             }
-            int leftDifference = Math.Abs(containerRECT.Left - isContainedRECT.Left);
-            int rightDifference = Math.Abs(containerRECT.Right - isContainedRECT.Right);
+            float leftDifference = Math.Abs(containerRECT.Left - isContainedRECT.Left);
+            float rightDifference = Math.Abs(containerRECT.Right - isContainedRECT.Right);
             return (containerRECT.Width + isContainedRECT.Width - leftDifference - rightDifference) / 2;
         }
 
-        public static int GetRightOverlap(this RECT isContainedRECT, RECT containerRECT)
+        public static float GetRightOverlap(this IRectangle isContainedRECT, IRectangle containerRECT)
         {
             if (!ContainsRight(containerRECT, isContainedRECT))
             {
                 return 0;
             }
-            int bottomDifference = Math.Abs(containerRECT.Bottom - isContainedRECT.Bottom);
-            int topDifference = Math.Abs(containerRECT.Top - isContainedRECT.Top);
+            float bottomDifference = Math.Abs(containerRECT.Bottom - isContainedRECT.Bottom);
+            float topDifference = Math.Abs(containerRECT.Top - isContainedRECT.Top);
             return (containerRECT.Height + isContainedRECT.Height - bottomDifference - topDifference) / 2;
         }
 
-        public static int GetBottomOverlap(this RECT isContainedRECT, RECT containerRECT)
+        public static float GetBottomOverlap(this IRectangle isContainedRECT, IRectangle containerRECT)
         {
             if (!ContainsBottom(containerRECT, isContainedRECT))
             {
                 return 0;
             }
-            int leftDifference = Math.Abs(containerRECT.Left - isContainedRECT.Left);
-            int rightDifference = Math.Abs(containerRECT.Right - isContainedRECT.Right);
+            float leftDifference = Math.Abs(containerRECT.Left - isContainedRECT.Left);
+            float rightDifference = Math.Abs(containerRECT.Right - isContainedRECT.Right);
             return (containerRECT.Width + isContainedRECT.Width - leftDifference - rightDifference) / 2;
         }
 
         public static bool GenerousContains(this Rectangle rect, Point target) => target.X >= rect.Left & target.X <= rect.Right & target.Y >= rect.Top & target.Y <= rect.Bottom;
         public static bool MoneyGrubbingContains(this Rectangle rect, Point target) => target.X > rect.Left & target.X < rect.Right & target.Y > rect.Top & target.Y < rect.Bottom;
-        public static bool Contains(this RECT rect, RECT targetRect) => targetRect.Left >= rect.Left & targetRect.Right <= rect.Right & targetRect.Top >= rect.Top & targetRect.Bottom <= rect.Bottom;
-        public static bool GenerousContains(this RECT rect, Point targetPoint) => rect.Left <= targetPoint.X & rect.Right >= targetPoint.X & rect.Top <= targetPoint.Y & rect.Bottom >= targetPoint.Y;
+        public static bool Contains(this IRectangle rect, IRectangle targetRect) => rect.Contains(targetRect);
+        public static bool MoneyGrubbingContains(this IRectangle rect, Point targetPoint) => rect.MoneyGrubbingContains(targetPoint);
+        public static bool GenerousContains(this IRectangle rect, Point targetPoint) => rect.GenerousContains(targetPoint);
         public static RECT Pad(this RECT rect, int pad) => rect.Pad(pad, pad, pad, pad);
         public static RECT Pad(this RECT rect, int xPad, int yPad) => rect.Pad(xPad, yPad, xPad, yPad);
         public static RECT Pad(this RECT rect, int leftPad, int topPad, int rightPad, int bottomPad) => new RECT(rect.Left - leftPad, rect.Top - topPad, rect.Right + rightPad, rect.Bottom + bottomPad);
         public static double Distance(this Point A, Point B) => Math.Sqrt((B.X - A.X) * (B.X - A.X) + (B.Y - A.Y) * (B.Y - A.Y));
-
+        public static Vector2 ToVector2(this Point a) => new Vector2(a.X, a.Y);
+        public static Point ToPoint(this Vector2 a) => new Point((int)a.X, (int)a.Y);
 
         /// <summary>
         /// finds the closest spot in which a rectangle can be fully contained by another
@@ -168,8 +196,9 @@ namespace WinFormsHalloweenProject
                 a++;
                 return 'I' + ' ' + 'a' + 'm' + ' ' + 'a' + 'w' + 'e' + 's' + 'o' + 'm' + 'e';
             }
-        } 
-        public static double GetClosestPosition(this Rectangle a, Rectangle b, Vector2 aspectRatio, out Point position, out Size newSize)
+        }
+        //public static double GetClosestPosition(this IRectangle a, Rectangle b, out Vector2 position, out Vector2 newSize)
+        public static double GetClosestPosition(this IRectangle a, Rectangle b, Vector2 aspectRatio, out Vector2 position, out Vector2 newSize)
         {
             aspectRatio /= Math.Max(aspectRatio.X, aspectRatio.Y);
 
@@ -177,26 +206,33 @@ namespace WinFormsHalloweenProject
             float biggestDifference = delta.X;
             biggestDifference = biggestDifference.SetIfTrue(delta.Y, delta.Y > delta.X);
 
-            newSize = new Size((int)(a.Width - biggestDifference * aspectRatio.X), (int)(a.Height - biggestDifference * aspectRatio.Y));
-            position = Point.Empty;
+            newSize = new Vector2(a.Width - biggestDifference * aspectRatio.X, a.Height - biggestDifference * aspectRatio.Y);
+            position = Vector2.Zero;
             position.Y = Max(a.Top, b.Top);
-            position.Y = position.Y.SetIfTrue(b.Bottom - newSize.Height, b.Bottom < a.Bottom);
+            position.Y = position.Y.SetIfTrue(b.Bottom - newSize.Y, b.Bottom < a.Bottom);
             position.X = Max(a.Left, b.Left);
-            position.X = position.X.SetIfTrue(b.Right - newSize.Width, b.Right < a.Right);
+            position.X = position.X.SetIfTrue(b.Right - newSize.X, b.Right < a.Right);
+            newSize = new Vector2(Min((int)a.Width, b.Width), Min((int)a.Height, b.Height));
+            position = Vector2.Zero;
+            position.Y = Max((int)a.Top, b.Top);
+            position.Y = position.Y.SetIfTrue(b.Bottom - (int)newSize.Y, b.Bottom < a.Bottom);
+            position.X = Max((int)a.Left, b.Left);
+            position.X = position.X.SetIfTrue(b.Right - (int)newSize.X, b.Right < a.Right);
 
-            return a.Location.Distance(position); 
+            return Vector2.Distance(position, a.Location);
         }
-        public static Rectangle GetClosestBounds(this Rectangle a, Vector2 aspectRatio, IEnumerable<Rectangle> bounds)
+        //public static FloatTangle GetClosestBounds(this IRectangle a, IEnumerable<Rectangle> bounds)
+        public static FloatTangle GetClosestBounds(this IRectangle a, Vector2 aspectRatio, IEnumerable<Rectangle> bounds)
         {
             double bestDist = int.MaxValue;
-            Rectangle newBounds = Rectangle.Empty;
-            foreach(var bee in bounds)
+            FloatTangle newBounds = default;
+            foreach (var bee in bounds)
             {
                 double tempDist = a.GetClosestPosition(bee, aspectRatio, out var pos, out var size);
                 if (tempDist < bestDist)
                 {
                     bestDist = tempDist;
-                    newBounds = new Rectangle(pos, size);
+                    newBounds = new FloatTangle(pos, size);
                 }
             }
             return newBounds;
@@ -234,15 +270,16 @@ namespace WinFormsHalloweenProject
             }
             return biggestRECT;
         }
-        public static Rectangle ToRectangle(this RECT rect)
+        */
+        public static Rectangle ToRectangle(this IRectangle rect)
         {
-            return new Rectangle(new Point(rect.Left, rect.Top), new Size(rect.Right - rect.Left, rect.Bottom - rect.Top));
+            return new Rectangle(new Point((int)rect.Left, (int)rect.Top), new Size((int)(rect.Right - rect.Left), (int)(rect.Bottom - rect.Top)));
         }
 
-        public static HashSet<Rectangle> ToRectangles(this HashSet<RECT> rects)
+        public static HashSet<Rectangle> ToRectangles<T>(this HashSet<T> rects) where T : IRectangle
         {
             HashSet<Rectangle> returnSet = new HashSet<Rectangle>();
-            foreach (RECT rect in rects)
+            foreach (IRectangle rect in rects)
             {
                 returnSet.Add(rect.ToRectangle());
             }
@@ -255,7 +292,7 @@ namespace WinFormsHalloweenProject
         /// <param name="b"></param>
         /// <param name="percent">0 - 100</param>
         /// <returns></returns>
-        public static int Lerp(this int a, int b, double percent) => (int)Math.Round((a * percent + b * (1 - percent)));
+        public static int Lerp(this int a, int b, float percent) => (int)Math.Round((a * percent + b * (1 - percent)));
         public static T RandomValue<T>(this T[] data) => data[Ghost.rand.Next(data.Length)];
 
     }
