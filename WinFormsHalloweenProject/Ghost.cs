@@ -588,6 +588,7 @@ namespace WinFormsHalloweenProject
             trueLocation = CurrentPath[pathIndex + 1].Lerp(trueLocation, (currentDistance - (targetDistance - distances[pathIndex])) / distances[pathIndex]);
 
             TrueBounds = new Rectangle(trueLocation.X - TrueBounds.Width / 2, trueLocation.Y - TrueBounds.Width / 2, TrueBounds.Width, TrueBounds.Height);
+            TrueBounds = TrueBounds.ToRECT().GetBiggestRECT(startingBounds, CurrentWindows).ToRectangle();
         }
         //Location = new Point(trueLocation.X - TrueBounds.Width / 2 + rand.Next(-5, 5), trueLocation.Y - TrueBounds.Width / 2 + +rand.Next(-5, 5));
 
@@ -599,59 +600,40 @@ namespace WinFormsHalloweenProject
             RECT tentativeRectangle = new RECT(TrueBounds.Left + deltaX, TrueBounds.Top + deltaY, TrueBounds.Right + deltaX, TrueBounds.Bottom + deltaY);
             bool switchXDirection = false;
             bool switchYDirection = false;
-            foreach (RECT rect in CurrentWindows)
+            foreach (RECT window in CurrentWindows)
             {
-                if (rect.Intersects(tentativeRectangle))
+                if (window.Intersects(tentativeRectangle))
                 {
-                    int leftOverlap = tentativeRectangle.GetLeftOverlap(rect);
-                    int topOverlap = tentativeRectangle.GetTopOverlap(rect);
-                    int rightOverlap = tentativeRectangle.GetRightOverlap(rect);
-                    int bottomOverlap = tentativeRectangle.GetBottomOverlap(rect);
+                    int leftOverlap = tentativeRectangle.GetLeftOverlap(window);
+                    int topOverlap = tentativeRectangle.GetTopOverlap(window);
+                    int rightOverlap = tentativeRectangle.GetRightOverlap(window);
+                    int bottomOverlap = tentativeRectangle.GetBottomOverlap(window);
 
                     int maxOverlap = Math.Max(Math.Max(leftOverlap, topOverlap), Math.Max(rightOverlap, bottomOverlap));
                     if (leftOverlap == maxOverlap)
                     {
                         Console.WriteLine("LeftOverlapped");
                         switchXDirection = true;
-                        tentativeRectangle = tentativeRectangle.ClampToRight(rect);
+                        tentativeRectangle = tentativeRectangle.ClampToRight(window);
+                    }
+                    else if (rightOverlap == maxOverlap)
+                    {
+                        Console.WriteLine("RightOverlapped");
+                        switchXDirection = true;
+                        tentativeRectangle = tentativeRectangle.ClampToLeft(window);
                     }
                     if (topOverlap == maxOverlap)
                     {
                         Console.WriteLine("TopOverlapped");
                         switchYDirection = true;
-                        tentativeRectangle = tentativeRectangle.ClampToBottom(rect);
+                        tentativeRectangle = tentativeRectangle.ClampToBottom(window);
                     }
-                    if (rightOverlap == maxOverlap)
-                    {
-                        Console.WriteLine("RightOverlapped");
-                        switchXDirection = true;
-                        tentativeRectangle = tentativeRectangle.ClampToLeft(rect);
-                    }
-                    if (bottomOverlap == maxOverlap)
+                    else if (bottomOverlap == maxOverlap)
                     {
                         Console.WriteLine("BottomOverlapped");
                         switchYDirection = true;
-                        tentativeRectangle = tentativeRectangle.ClampToTop(rect);
+                        tentativeRectangle = tentativeRectangle.ClampToTop(window);
                     }
-
-                    //switch(maxOverlap)
-                    //{
-                    //    case leftOverlap:
-
-                    //        break;
-
-                    //    case topOverlap:
-
-                    //        break;
-
-                    //    case rightOverlap:
-
-                    //        break;
-
-                    //    case bottomOverlap:
-
-                    //        break;
-                    //}
                     //run this check a second time to make sure the ghost is successfuly moved. If it isn't just return the old distance(also figure out which directions need to be switched somehow, maybe both) 
                     //whichever overlap is the largest is the side that the ghost needs to be pushed out of and the side that the direction of movement should be switched
                 }

@@ -77,16 +77,16 @@ namespace WinFormsHalloweenProject
 
 
         public static RECT ClampToLeft(this RECT currentRECT, RECT containerRECT) => 
-            new RECT(containerRECT.Left - currentRECT.Width, currentRECT.Top, containerRECT.Left, currentRECT.Bottom);
+            new RECT(containerRECT.Left - currentRECT.Width - 1, currentRECT.Top, containerRECT.Left - 1, currentRECT.Bottom);
 
         public static RECT ClampToTop(this RECT currentRECT, RECT containerRECT) =>
-            new RECT(currentRECT.Left, containerRECT.Top - currentRECT.Height, currentRECT.Right, containerRECT.Top);
+            new RECT(currentRECT.Left, containerRECT.Top - currentRECT.Height - 1, currentRECT.Right, containerRECT.Top - 1);
 
         public static RECT ClampToRight(this RECT currentRECT, RECT containerRECT) =>
-            new RECT(containerRECT.Right, currentRECT.Top, containerRECT.Right + currentRECT.Width, currentRECT.Bottom);
+            new RECT(containerRECT.Right + 1, currentRECT.Top, containerRECT.Right + currentRECT.Width + 1, currentRECT.Bottom);
 
         public static RECT ClampToBottom(this RECT currentRECT, RECT containerRECT) =>
-            new RECT(currentRECT.Left, containerRECT.Bottom, currentRECT.Right, containerRECT.Bottom + currentRECT.Height);
+            new RECT(currentRECT.Left, containerRECT.Bottom + 1, currentRECT.Right, containerRECT.Bottom + currentRECT.Height + 1);
 
         public static bool Intersects(this RECT rect1, RECT rect2) => rect1.Top <= rect2.Bottom & rect1.Bottom >= rect2.Top & rect1.Left <= rect2.Right & rect1.Right >= rect2.Left;
 
@@ -202,36 +202,37 @@ namespace WinFormsHalloweenProject
             return newBounds;
         }
 
-        public static RECT GetBiggestRECT(this RECT currentRECT, Size maxSize, HashSet<RECT> obstacles)
+        public static RECT GetBiggestRECT(this RECT currentRECT, Vector2 maxSize, HashSet<RECT> obstacles)
         {
-            double distance = Math.Sqrt((pointB.X - pointA.X) * (pointB.X - pointA.X) + (pointB.Y - pointA.Y) * (pointB.Y - pointA.Y));
+            double distance = Math.Sqrt((maxSize.X - currentRECT.Width) * (maxSize.X - currentRECT.Width) + (maxSize.Y - currentRECT.Height) * (maxSize.Y - currentRECT.Height));
+            RECT biggestRECT = currentRECT;
             double percentIncrement = 1 / distance;
             double currentPercent = percentIncrement;
-            double xValue;
-            double yValue;
-            Point currentPoint;
 
-            bool straight = pointA.X == pointB.X | pointA.Y == pointB.Y;
+            double newWidth = currentRECT.Width;
+            double newHeight = currentRECT.Height;
+
+            RECT potentialBiggestRECT;
 
             while (currentPercent < 1)
             {
-                xValue = ((double)pointA.X).Lerp(pointB.X, currentPercent) + .99999;
-                yValue = ((double)pointA.Y).Lerp(pointB.Y, currentPercent) + .99999;
+
+                newWidth = ((double)currentRECT.Width).Lerp(maxSize.X, currentPercent) + .99999;
+                newHeight = ((double)currentRECT.Height).Lerp(maxSize.Y, currentPercent) + .99999;
 
                 currentPercent += percentIncrement;
 
-                currentPoint = new Point((int)xValue, (int)yValue);
-                int generousContainment = 0;
-                foreach (Ghost.RECT rect in activeRectangles)
+                potentialBiggestRECT = new RECT((int)(biggestRECT.Left - (newWidth - biggestRECT.Width) / 2), (int)(biggestRECT.Top - (newHeight - biggestRECT.Height) / 2), (int)(biggestRECT.Right + (newWidth - biggestRECT.Width) / 2), (int)(biggestRECT.Bottom + (newHeight - biggestRECT.Height) / 2));
+                foreach (RECT obstacle in obstacles)
                 {
-                    generousContainment += rect.Pad(1).GenerousContains(currentPoint).ToByte();
-                    if ((straight.ToByte() + generousContainment > 1 || rect.Contains(currentPoint)))
+                    if(potentialBiggestRECT.Intersects(obstacle))
                     {
-                        return false;
+                        return biggestRECT;
                     }
+                    biggestRECT = potentialBiggestRECT;
                 }
             }
-            return true;
+            return biggestRECT;
         }
         public static Rectangle ToRectangle(this RECT rect)
         {
