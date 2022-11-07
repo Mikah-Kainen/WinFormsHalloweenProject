@@ -518,7 +518,7 @@ namespace WinFormsHalloweenProject
                     }
                     #endregion
                     trueLocation = TrueBounds.GetCenter(); 
-
+                     
                     CurrentPath = graph.GetPath(CurrentWindows, trueLocation, out pathResult, out endGoal, out spaces);
                 }
 
