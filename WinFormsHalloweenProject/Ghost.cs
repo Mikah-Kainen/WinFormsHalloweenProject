@@ -567,8 +567,15 @@ namespace WinFormsHalloweenProject
             MovementVector = oldLocation - (Size)Location;
             oldLocation = (Size)Location;
 
-            trueLocation = new Vector2(Math.Clamp(trueLocation.X, Screen.PrimaryScreen.Bounds.Left, Screen.PrimaryScreen.Bounds.Right - TrueBounds.Width), Math.Clamp(trueLocation.Y, Screen.PrimaryScreen.Bounds.Top, Screen.PrimaryScreen.Bounds.Bottom - TrueBounds.Height));
+            try
+            {
+                trueLocation = new Vector2(Math.Clamp(trueLocation.X, Screen.PrimaryScreen.Bounds.Left, Screen.PrimaryScreen.Bounds.Right - TrueBounds.Width), Math.Clamp(trueLocation.Y, Screen.PrimaryScreen.Bounds.Top, Screen.PrimaryScreen.Bounds.Bottom - TrueBounds.Height));
 
+            }
+            catch
+            {
+                ;
+            }
 
             if (vibing = vibing || endGoal.Contains(TrueBounds.ToRectangle()))
             {
@@ -615,9 +622,10 @@ namespace WinFormsHalloweenProject
 
             trueLocation = trueLocation.Lerp(CurrentPath[pathIndex + 1].ToVector2(), (currentDistance - (targetDistance - distances[pathIndex])) / distances[pathIndex]);
 
-            TrueBounds = new Rectangle(trueLocation.X - TrueBounds.Width / 2, trueLocation.Y - TrueBounds.Width / 2, TrueBounds.Width, TrueBounds.Height);
-            TrueBounds = TrueBounds.ToRECT().GetBiggestRECT(startingBounds, CurrentWindows).ToRectangle();
-            TrueBounds = new FloatTangle(trueLocation.X - TrueBounds.Width / 2, trueLocation.Y - TrueBounds.Width / 2, TrueBounds.Width, TrueBounds.Height);
+            var old = TrueBounds = new FloatTangle(trueLocation.X - TrueBounds.Width / 2, trueLocation.Y - TrueBounds.Width / 2, TrueBounds.Width, TrueBounds.Height);            
+            TrueBounds = TrueBounds.GetBiggestRECT(startingBounds, CurrentWindows);
+            if (TrueBounds.Height > 200)
+                ;
         }
         //Location = new Point(trueLocation.X - TrueBounds.Width / 2 + rand.Next(-5, 5), trueLocation.Y - TrueBounds.Width / 2 + +rand.Next(-5, 5));
 
@@ -629,39 +637,39 @@ namespace WinFormsHalloweenProject
             FloatTangle tentativeRectangle = new FloatTangle(TrueBounds.Left + deltaX, TrueBounds.Top + deltaY, TrueBounds.Right + deltaX, TrueBounds.Bottom + deltaY);
             bool switchXDirection = false;
             bool switchYDirection = false;
-            foreach (RECT rect in CurrentWindows)
+            foreach (RECT window in CurrentWindows)
             {
-                if (rect.Intersects(tentativeRectangle))
+                if (window.Intersects(tentativeRectangle))
                 {
-                    float leftOverlap = tentativeRectangle.GetLeftOverlap(rect);
-                    float topOverlap = tentativeRectangle.GetTopOverlap(rect);
-                    float rightOverlap = tentativeRectangle.GetRightOverlap(rect);
-                    float bottomOverlap = tentativeRectangle.GetBottomOverlap(rect);
+                    float leftOverlap = tentativeRectangle.GetLeftOverlap(window);
+                    float topOverlap = tentativeRectangle.GetTopOverlap(window);
+                    float rightOverlap = tentativeRectangle.GetRightOverlap(window);
+                    float bottomOverlap = tentativeRectangle.GetBottomOverlap(window);
 
                     float maxOverlap = Math.Max(Math.Max(leftOverlap, topOverlap), Math.Max(rightOverlap, bottomOverlap));
                     if (leftOverlap == maxOverlap)
                     {
                         Console.WriteLine("LeftOverlapped");
                         switchXDirection = true;
-                        tentativeRectangle = tentativeRectangle.ClampToRight(rect);
+                        tentativeRectangle = tentativeRectangle.ClampToRight(window);
                     }
                     if (topOverlap == maxOverlap)
                     {
                         Console.WriteLine("TopOverlapped");
                         switchYDirection = true;
-                        tentativeRectangle = tentativeRectangle.ClampToBottom(rect);
+                        tentativeRectangle = tentativeRectangle.ClampToBottom(window);
                     }
                     if (rightOverlap == maxOverlap)
                     {
                         Console.WriteLine("RightOverlapped");
                         switchXDirection = true;
-                        tentativeRectangle = tentativeRectangle.ClampToLeft(rect);
+                        tentativeRectangle = tentativeRectangle.ClampToLeft(window);
                     }
                     if (bottomOverlap == maxOverlap)
                     {
                         Console.WriteLine("BottomOverlapped");
                         switchYDirection = true;
-                        tentativeRectangle = tentativeRectangle.ClampToTop(rect);
+                        tentativeRectangle = tentativeRectangle.ClampToTop(window);
                     }
                     //run this check a second time to make sure the ghost is successfuly moved. If it isn't just return the old distance(also figure out which directions need to be switched somehow, maybe both) 
                     //whichever overlap is the largest is the side that the ghost needs to be pushed out of and the side that the direction of movement should be switched
