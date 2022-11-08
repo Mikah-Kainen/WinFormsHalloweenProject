@@ -9,12 +9,15 @@ using static WinFormsHalloweenProject.Ghost;
 
 namespace WinformsHalloweenProject
 {
+    #region EddenIDK
+    using TotallyNotaFloatISwear = System.Single;
+    #endregion
     public interface IRectangle
     {
         float X { get; set; }
         float Y { get; set; }
-        float Width { get; set; }
-        float Height { get; set; }
+        float Width { get; /*set;*/ }
+        float Height { get; /*set;*/ }
         float Left { get; }
         float Right { get; }
         float Top { get; }
@@ -39,13 +42,22 @@ namespace WinformsHalloweenProject
 
     public struct FloatTangle : IRectangle
     {
-        public FloatTangle(float x, float y, float width, float height)
+        public FloatTangle(float left, float top, float right, float bottom)
         {
-            X = x;
-            Y = y;
+            X = left;
+            Y = top;
+            Width = right - left;
+            Height = bottom - top;
+        }
+        #region EddenIDK
+        public FloatTangle(TotallyNotaFloatISwear x, TotallyNotaFloatISwear y, TotallyNotaFloatISwear width, TotallyNotaFloatISwear height, bool pad = false)
+        {
             Width = width;
             Height = height;
+            X = x;
+            Y = y;
         }
+        #endregion
         public FloatTangle(Vector2 position, Vector2 size)
         {
             X = position.X;

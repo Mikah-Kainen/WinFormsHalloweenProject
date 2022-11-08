@@ -213,12 +213,12 @@ namespace WinFormsHalloweenProject
         }
         FloatTangle TrueBounds
         {
-            get => new FloatTangle(BackingBounds.X + leftOffset * scale.X, BackingBounds.Y + topOffset * scale.Y, BackingBounds.Width - leftOffset * scale.X - rightOffset * scale.X, BackingBounds.Height - topOffset * scale.Y - bottomOffset * scale.Y);
+            get => new FloatTangle(new Vector2(BackingBounds.X + leftOffset * scale.X, BackingBounds.Y + topOffset * scale.Y), new Vector2(BackingBounds.Width - leftOffset * scale.X - rightOffset * scale.X, BackingBounds.Height - topOffset * scale.Y - bottomOffset * scale.Y));
             set
             {
                 var origScale = scale;
                 scale = new Vector2(value.Width / startingBounds.X, value.Height / startingBounds.Y);
-                BackingBounds = new FloatTangle(value.X - leftOffset * scale.X, value.Y - topOffset * scale.Y, value.Width + leftOffset * scale.X + rightOffset * scale.X, value.Height + topOffset * scale.Y + bottomOffset * scale.Y);
+                BackingBounds = new FloatTangle(new Vector2(value.X - leftOffset * scale.X, value.Y - topOffset * scale.Y), new Vector2(value.Width + leftOffset * scale.X + rightOffset * scale.X, value.Height + topOffset * scale.Y + bottomOffset * scale.Y));
             }
         }
 
@@ -582,8 +582,9 @@ namespace WinFormsHalloweenProject
                 Console.WriteLine("vibing");
                 //vibe
                 //TrueBounds = Wander();
-                TrueBounds = new FloatTangle(trueLocation.X - TrueBounds.Width / 2, trueLocation.Y - TrueBounds.Width / 2, TrueBounds.Width, TrueBounds.Height);
+                TrueBounds = new FloatTangle(new Vector2(trueLocation.X - TrueBounds.Width / 2, trueLocation.Y - TrueBounds.Width / 2), new Vector2(TrueBounds.Width, TrueBounds.Height));
                 //    Location = new Point(trueLocation.X - TrueBounds.Width / 2 + rand.Next(-5, 5), trueLocation.Y - TrueBounds.Width / 2 + +rand.Next(-5, 5));
+                TrueBounds = TrueBounds.GetBiggestRECT(startingBounds, CurrentWindows);
                 return;
             }
             Console.WriteLine("Not vibing :(");
@@ -612,17 +613,19 @@ namespace WinFormsHalloweenProject
             var lerpChange = Math.Clamp(globalLerpFactor * (1 + (globalLerpFactor <= .5).ToByte() * 2 - 1) * .1f, .001f, .005f);
             globalLerpFactor += lerpChange;
             currentDistance = 0f.Lerp(totalDistance, globalLerpFactor);
-            if (vibing = globalLerpFactor >= 1) return;
-            if (currentDistance >= targetDistance)
+            if (!(vibing = globalLerpFactor >= 1))
             {
-                targetDistance += distances[++pathIndex];
+                if (currentDistance >= targetDistance)
+                {
+                    targetDistance += distances[++pathIndex];
+                }
+
+
+
+                trueLocation = trueLocation.Lerp(CurrentPath[pathIndex + 1].ToVector2(), (currentDistance - (targetDistance - distances[pathIndex])) / distances[pathIndex]);
+
             }
-
-
-
-            trueLocation = trueLocation.Lerp(CurrentPath[pathIndex + 1].ToVector2(), (currentDistance - (targetDistance - distances[pathIndex])) / distances[pathIndex]);
-
-            var old = TrueBounds = new FloatTangle(trueLocation.X - TrueBounds.Width / 2, trueLocation.Y - TrueBounds.Width / 2, TrueBounds.Width, TrueBounds.Height);            
+            var old = TrueBounds = new FloatTangle(new Vector2(trueLocation.X - TrueBounds.Width / 2, trueLocation.Y - TrueBounds.Width / 2), new Vector2(TrueBounds.Width, TrueBounds.Height));
             TrueBounds = TrueBounds.GetBiggestRECT(startingBounds, CurrentWindows);
             if (TrueBounds.Height > 200)
                 ;

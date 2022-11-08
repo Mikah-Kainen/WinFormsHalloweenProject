@@ -23,8 +23,8 @@ namespace WinFormsHalloweenProject
         {
             rect.X = rect.X.Lerp(other.X, factor);
             rect.Y = rect.X.Lerp(other.Y, factor);
-            rect.Width = rect.X.Lerp(other.Width, factor);
-            rect.Height = rect.X.Lerp(other.Height, factor);
+            //rect.Width = rect.X.Lerp(other.Width, factor);
+            //rect.Height = rect.X.Lerp(other.Height, factor);
             return rect;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -270,6 +270,7 @@ namespace WinFormsHalloweenProject
                 //a.Left -= aspectRatio / 2;
 
             }
+            return a;
         }
         public static double GetClosestPosition(this IRectangle a, Rectangle b, Vector2 aspectRatio, out Vector2 position, out Vector2 newSize)
         {
@@ -316,7 +317,7 @@ namespace WinFormsHalloweenProject
             Vector2 center = new Vector2(currentRECT.Left + currentRECT.Width / 2, currentRECT.Top + currentRECT.Height / 2);
 
             double distance = Math.Sqrt(maxSize.X * maxSize.X + maxSize.Y * maxSize.Y);
-            FloatTangle biggestRECT = new FloatTangle(center.X, center.Y, 0, 0);
+            FloatTangle biggestRECT = new FloatTangle(new Vector2(center.X, center.Y), Vector2.Zero);
             double percentIncrement = 1 / distance;
             double currentPercent = percentIncrement;
 
