@@ -313,13 +313,15 @@ namespace WinFormsHalloweenProject
 
         public static FloatTangle GetBiggestRECT(this FloatTangle currentRECT, Vector2 maxSize, HashSet<RECT> obstacles)
         {
+            Vector2 center = new Vector2(currentRECT.Left + currentRECT.Width / 2, currentRECT.Top + currentRECT.Height / 2);
+
             double distance = Math.Sqrt(maxSize.X * maxSize.X + maxSize.Y * maxSize.Y);
-            FloatTangle biggestRECT = currentRECT;
+            FloatTangle biggestRECT = new FloatTangle(center.X, center.Y, 0, 0);
             double percentIncrement = 1 / distance;
             double currentPercent = percentIncrement;
 
-            double newWidth = currentRECT.Width;
-            double newHeight = currentRECT.Height;
+            double newWidth = 0;
+            double newHeight = 0;
 
             FloatTangle potentialBiggestRECT;
 
@@ -334,18 +336,33 @@ namespace WinFormsHalloweenProject
                 }
                 if (newWidth < maxSize.X)
                 {
-                    newWidth = (0d).Lerp(maxSize.X, currentPercent) + .99999;
+                    newWidth = (0d).Lerp(maxSize.X, currentPercent);
+                }
+                else
+                {
+                    newWidth = maxSize.X;
                     maxWidthReached = true;
                 }
                 if (newHeight < maxSize.Y)
                 {
-                    newHeight = (0d).Lerp(maxSize.Y, currentPercent) + .99999;
+                    newHeight = (0d).Lerp(maxSize.Y, currentPercent);
+                }
+                else
+                {
+                    newHeight = maxSize.Y;
                     maxHeightReached = true;
                 }
 
                 currentPercent += percentIncrement;
+                if (newWidth < biggestRECT.Width)
+                {
 
-                potentialBiggestRECT = new FloatTangle((int)(biggestRECT.Left - (newWidth - biggestRECT.Width) / 2), (int)(biggestRECT.Top - (newHeight - biggestRECT.Height) / 2), (int)(biggestRECT.Right + (newWidth - biggestRECT.Width) / 2), (int)(biggestRECT.Bottom + (newHeight - biggestRECT.Height) / 2));
+                }
+                if (newHeight < biggestRECT.Height)
+                {
+
+                }
+                potentialBiggestRECT = new FloatTangle((float)(center.X - newWidth / 2), (float)(center.Y - newHeight / 2), (float)(center.X + newWidth / 2), (float)(center.Y + newHeight / 2));
                 foreach (RECT obstacle in obstacles)
                 {
                     if (potentialBiggestRECT.Intersects(obstacle))
