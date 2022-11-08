@@ -13,8 +13,8 @@ namespace WinformsHalloweenProject
     {
         float X { get; set; }
         float Y { get; set; }
-        float Width { get; }
-        float Height { get; }
+        float Width { get; set; }
+        float Height { get; set; }
         float Left { get; }
         float Right { get; }
         float Top { get; }
@@ -29,8 +29,8 @@ namespace WinformsHalloweenProject
                 Y -= value.Y - Height / 2;
             }
         }
-        bool Intersects(IRectangle other) => Top <= other.Bottom & Bottom >= other.Top & Left <= other.Right & Right >= other.Left;
-        bool Intersects(Rectangle other) => Top <= other.Bottom & Bottom >= other.Top & Left <= other.Right & Right >= other.Left;
+        bool Intersects(IRectangle other) => Top < other.Bottom & Bottom > other.Top & Left < other.Right & Right > other.Left;
+        bool Intersects(Rectangle other) => Top < other.Bottom & Bottom > other.Top & Left < other.Right & Right > other.Left;
         public bool MoneyGrubbingContains(Point target) => target.X > Left & target.X < Right & target.Y > Top & target.Y < Bottom;
         public bool Contains(IRectangle other) => other.Left >= Left & other.Right <= Right & other.Top >= Top & other.Bottom <= Bottom;
         public bool GenerousContains(Point target) => Left <= target.X & Right >= target.X & Top <= target.Y & Bottom >= target.Y;
@@ -61,13 +61,11 @@ namespace WinformsHalloweenProject
 
         public float Height { get; set; }
 
-        public float Left => X;
+        public float Left { get => X; set { Width += X - value; X = value; } }        
+        public float Right { get => X + Width; set => Width = value - X; }
 
-        public float Right => X + Width;
-
-        public float Top => Y;
-
-        public float Bottom => Y + Height;
+        public float Top { get => Y; set { Height += Y - value; Y = value; } }
+        public float Bottom { get => Y + Height; set => Height = value - Y; }
 
         public Vector2 Location => new Vector2(X, Y);
     }

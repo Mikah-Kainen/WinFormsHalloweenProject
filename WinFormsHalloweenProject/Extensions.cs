@@ -19,6 +19,15 @@ namespace WinFormsHalloweenProject
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 Lerp(this Vector2 a, Vector2 b, float percent) => new Vector2(a.X.Lerp(b.X, percent), a.Y.Lerp(b.Y, percent));
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static IRectangle Lerp(this IRectangle rect, IRectangle other, float factor)
+        {
+            rect.X = rect.X.Lerp(other.X, factor);
+            rect.Y = rect.X.Lerp(other.Y, factor);
+            rect.Width = rect.X.Lerp(other.Width, factor);
+            rect.Height = rect.X.Lerp(other.Height, factor);
+            return rect;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe byte ToByte(this bool val) => ToByte(&val);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe byte ToByte(bool* val) => *(byte*)val;
@@ -76,7 +85,6 @@ namespace WinFormsHalloweenProject
         //    return b * result - (a * (result - 1));
         //}
         public static int NextError(this Random rand, int degree) => rand.Next(-degree, degree + 1);
-
         public static double NextError(this Random rand, double degree) => rand.NextDouble() * degree * (rand.Next(0, 2) * 2 - 1);
 
         public static double Lerp(this double a, double b, double percent) => b * percent + a * (1 - percent);
@@ -102,7 +110,7 @@ namespace WinFormsHalloweenProject
         }
 
 
-        public static FloatTangle ClampToLeft(this IRectangle currentRECT, IRectangle containerRECT) => 
+        public static FloatTangle ClampToLeft(this IRectangle currentRECT, IRectangle containerRECT) =>
             new FloatTangle(containerRECT.Left - currentRECT.Width - 1, currentRECT.Top, containerRECT.Left - 1, currentRECT.Bottom);
 
         public static FloatTangle ClampToTop(this IRectangle currentRECT, IRectangle containerRECT) =>
@@ -116,9 +124,24 @@ namespace WinFormsHalloweenProject
 
         public static bool Intersects(this IRectangle rect1, IRectangle rect2) => rect1.Intersects(rect2);
 
+        /// <summary>
+        /// container's right intersects with contained left
+        /// </summary>
         public static bool ContainsLeft(this IRectangle containerRECT, IRectangle isContainedRECT) => containerRECT.Left <= isContainedRECT.Right & containerRECT.Left >= isContainedRECT.Left & (containerRECT.Top <= isContainedRECT.Bottom & containerRECT.Bottom >= isContainedRECT.Top); //containerIRectangle contains the left of isContainedRECT
+
+        /// <summary>
+        /// container's Bottom intersects with contained top
+        /// </summary>
         public static bool ContainsTop(this IRectangle containerRECT, IRectangle isContainedRECT) => containerRECT.Top <= isContainedRECT.Bottom & containerRECT.Top >= isContainedRECT.Top & (containerRECT.Left <= isContainedRECT.Right & containerRECT.Right >= isContainedRECT.Left); //containerIRectangle contains the top of isContainedRECT
+
+        /// <summary>
+        /// container's left intersects with contained right
+        /// </summary>
         public static bool ContainsRight(this IRectangle containerRECT, IRectangle isContainedRECT) => containerRECT.Right >= isContainedRECT.Left & containerRECT.Right <= isContainedRECT.Right & (containerRECT.Top <= isContainedRECT.Bottom & containerRECT.Bottom >= isContainedRECT.Top); //containerIRectangle contains the right of isContainedRECT
+
+        /// <summary>
+        /// container's top intersects with contained bottom
+        /// </summary>
         public static bool ContainsBottom(this IRectangle containerRECT, IRectangle isContainedRECT) => containerRECT.Bottom >= isContainedRECT.Top & containerRECT.Bottom <= isContainedRECT.Bottom & (containerRECT.Left <= isContainedRECT.Right & containerRECT.Right >= isContainedRECT.Left); //containerIRectangle contains the bottom of isContainedRECT
 
         public static float GetLeftOverlap(this IRectangle isContainedRECT, IRectangle containerRECT)
@@ -198,6 +221,56 @@ namespace WinFormsHalloweenProject
             }
         }
         //public static double GetClosestPosition(this IRectangle a, Rectangle b, out Vector2 position, out Vector2 newSize)
+        [Flags]
+        enum Horizontals
+        {
+            None,
+            Left,
+            Right
+        }
+        [Flags]
+        enum Verticals
+        {
+            None,
+            Top = 1,
+            Bottom
+        }
+        public static FloatTangle GetLargestBounds(this FloatTangle a, Vector2 startingLocation, Vector2 maxSize, IEnumerable<RECT> obstacles)
+        {
+            Vector2 aspectRatio = maxSize / (Max(maxSize.X, maxSize.Y));
+
+            Horizontals horizontalFails = Horizontals.None;
+            Verticals verticalFails = Verticals.None;
+
+            foreach (var obstacle in obstacles)
+            {
+                if (obstacle.Intersects(a))
+                {
+                    a = new FloatTangle(startingLocation, Vector2.Zero);
+                }    
+            }
+
+
+            while (a.Width < maxSize.X)
+            {
+                foreach (var obstacle in obstacles)
+                {
+                    if (obstacle.Intersects(a))
+                    {
+                        if (!horizontalFails.HasFlag(Horizontals.Left) && obstacle.ContainsLeft(a))
+                        {
+                            horizontalFails |= Horizontals.Left;
+                        }
+                        else if (!horizontalFails.HasFlag(Horizontals.Right) && obstacle.ContainsRight(a))
+                        {
+
+                        }
+                    }
+                }
+                //a.Left -= aspectRatio / 2;
+
+            }
+        }
         public static double GetClosestPosition(this IRectangle a, Rectangle b, Vector2 aspectRatio, out Vector2 position, out Vector2 newSize)
         {
             aspectRatio /= Math.Max(aspectRatio.X, aspectRatio.Y);
@@ -255,7 +328,7 @@ namespace WinFormsHalloweenProject
 
             while (currentPercent < 1)
             {
-                if(maxWidthReached & maxHeightReached)
+                if (maxWidthReached & maxHeightReached)
                 {
                     return biggestRECT;
                 }
@@ -275,7 +348,7 @@ namespace WinFormsHalloweenProject
                 potentialBiggestRECT = new FloatTangle((int)(biggestRECT.Left - (newWidth - biggestRECT.Width) / 2), (int)(biggestRECT.Top - (newHeight - biggestRECT.Height) / 2), (int)(biggestRECT.Right + (newWidth - biggestRECT.Width) / 2), (int)(biggestRECT.Bottom + (newHeight - biggestRECT.Height) / 2));
                 foreach (RECT obstacle in obstacles)
                 {
-                    if(potentialBiggestRECT.Intersects(obstacle))
+                    if (potentialBiggestRECT.Intersects(obstacle))
                     {
                         return biggestRECT;
                     }
@@ -284,7 +357,7 @@ namespace WinFormsHalloweenProject
             }
             return biggestRECT;
         }
-        
+
         public static Rectangle ToRectangle(this IRectangle rect)
         {
             return new Rectangle(new Point((int)rect.Left, (int)rect.Top), new Size((int)(rect.Right - rect.Left), (int)(rect.Bottom - rect.Top)));

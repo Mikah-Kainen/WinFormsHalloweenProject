@@ -23,6 +23,11 @@ namespace WinFormsHalloweenProject
             public Node NodeB;
 
             const int pixelsToLerp = 1;
+
+            /// <summary>
+            /// Mathematically determines and sets the size scaler for this connection 
+            /// </summary>
+            /// <param name="rectangles">traversable empty spaces to consider</param>
             public void SetSize(IEnumerable<Rectangle> rectangles)
             {  
                 Size = 0;
