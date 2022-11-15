@@ -9,11 +9,14 @@ using System.Windows.Forms.VisualStyles;
 using System.Diagnostics;
 using System.Text;
 using System.Numerics;
+using System.Drawing;
 
 namespace WinFormsHalloweenProject
 {
     using Tintmap = ValueTuple<Bitmap, Color>;
     using static Particle;
+    using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+
     // using static Pain;
     // using ParticlePool = ObjectPool<Particle>;
     public partial class Ghost : Form
@@ -190,6 +193,8 @@ namespace WinFormsHalloweenProject
         private Point currentSpeed;
         private Point currentDirection;
         #endregion
+
+        bool start = true;
 
         Size oldLocation;
         public Size MovementVector;
@@ -389,10 +394,22 @@ namespace WinFormsHalloweenProject
                 {
                     particleTexture.maps.AddFirst((Bitmap)particleTexture.template.Clone());
                 }
-                var chosenTexture = particleTexture.maps.First.Value;
-                particleTexture.maps.RemoveFirst();
+                try
+                {
+                    var chosenTexture = particleTexture.maps.First.Value;
+                    particleTexture.maps.RemoveFirst();
 
-                particle.SetData(particleKey, chosenTexture, this, 500, 500, new Point(Bounds.X + Bounds.Width / 2 - (int)(chosenTexture.Width * .05f), Bounds.Bottom - (int)(chosenTexture.Height * .1f)), MovementVector, (float)particleScale / 10);
+                    particle.SetData(particleKey, chosenTexture, this, 500, 500, new Point(Bounds.X + Bounds.Width / 2 - (int)(chosenTexture.Width * .05f), Bounds.Bottom - (int)(chosenTexture.Height * .1f)), MovementVector, (float)particleScale / 10);
+
+                }
+                catch (NullReferenceException)
+                {
+                    Console.WriteLine("Magic null!!");
+                    for (var map = particleTexture.maps.First; map != null; map = map.Next)
+                    {
+                        map.Value = (Bitmap)map.Value.Clone();
+                    }
+                }
             }
             catch (System.InvalidOperationException)
             {
@@ -516,8 +533,9 @@ namespace WinFormsHalloweenProject
         // const double wantedSpeed = 5;
         private void Movement_Tick(object sender, EventArgs e)
         {
-            if (GetPath(false, ref pathResult, out var spaces))
+            if (GetPath(start, ref pathResult, out var spaces))
             {
+                start = false;
                 Console.WriteLine("new path");
                 vibing = false;
                 pathIndex = -1;
@@ -540,9 +558,15 @@ namespace WinFormsHalloweenProject
                     if (TrueBounds.Equals(newBounds))
                     {
                         //T OD O RO L IS T:
-                        //make the GetClosestBounds take into account aspect ratio
-                        //make a true bounds that uses doubles to avoid rounding errors
-                        //make it so the ghost increases in size when it has the chance
+                        //make it so the ghost doesn't stop on each step of the path. 
+                        //make a min ghost size.
+                        //check if the ghost is sometimes missing paths because they are too small.
+                        //check scaling to see if the black line still appears and if it does stop scaling the whole winform.
+                        //make the wandering function work.
+                        //test(especially the startup hooks).
+                        //deploy.
+                        //party.
+                        //work on the attendance automizer.
                     }
                     #endregion
                     trueLocation = TrueBounds.GetCenter();
