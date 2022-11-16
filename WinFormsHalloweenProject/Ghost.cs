@@ -619,7 +619,7 @@ namespace WinFormsHalloweenProject
                 //TrueBounds = Wander();
                 wantedBounds = wantedBounds.GetLargestBounds(trueLocation, startingBounds, CurrentWindows, Screen.PrimaryScreen.Bounds);
                 //    Location = new Point(trueLocation.X - TrueBounds.Width / 2 + rand.Next(-5, 5), trueLocation.Y - TrueBounds.Width / 2 + +rand.Next(-5, 5));
-                TrueBounds = TrueBounds.GetBiggestRECT(startingBounds, CurrentWindows);
+             //   TrueBounds = TrueBounds.GetBiggestRECT(startingBounds, CurrentWindows);
                 return;
             }
             Console.WriteLine("Not vibing :(");
