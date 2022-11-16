@@ -93,7 +93,7 @@ namespace WinFormsHalloweenProject
         /// <param name="biggestSize">Outputs the measurment of size for the chosen rectangle</param>
         /// <returns>The best suited rectangle</returns>
 
-        public static float GetRectSize(RECT rect, Vector2 aspectRatio) => Math.Min(rect.Width * (1 / aspectRatio.X), rect.Height * (1 / aspectRatio.Y));
+        public static float GetRectSize(RECT rect, Vector2 aspectRatio) { aspectRatio /= Math.Max(aspectRatio.X, aspectRatio.Y); return Math.Min(rect.Width * (1 / aspectRatio.X), rect.Height * (1 / aspectRatio.Y)); }
         public static RECT GetBiggestRectangle(Point location, Vector2 aspectRatio, IEnumerable<RECT> rectangles, out float biggestSize)
         {
             aspectRatio /= Math.Max(aspectRatio.X, aspectRatio.Y);

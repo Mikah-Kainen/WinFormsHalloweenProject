@@ -373,7 +373,7 @@ namespace WinFormsHalloweenProject
             Vector2 center = new Vector2(currentRECT.Left + currentRECT.Width / 2, currentRECT.Top + currentRECT.Height / 2);
 
             double distance = Math.Sqrt(maxSize.X * maxSize.X + maxSize.Y * maxSize.Y);
-            FloatTangle biggestRECT = new FloatTangle(center.X, center.Y, 0, 0);
+            FloatTangle biggestRECT = new FloatTangle(new Vector2(center.X, center.Y), Vector2.Zero);
             double percentIncrement = 1 / distance;
             double currentPercent = percentIncrement;
 
