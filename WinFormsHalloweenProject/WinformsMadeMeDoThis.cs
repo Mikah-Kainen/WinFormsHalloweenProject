@@ -20,7 +20,9 @@ namespace WinFormsHalloweenProject
         }
 
         public Vector2 Start { get; set; }
-        public Vector2 AspectRatio { get; set; } = Vector2.One;
+
+        Vector2 aspectRatio = Vector2.One;
+        public Vector2 AspectRatio { get => aspectRatio; set => aspectRatio = value  / Math.Max(value.X, value.Y); }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int Compare(RECT x, RECT y)

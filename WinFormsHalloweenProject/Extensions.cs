@@ -22,9 +22,9 @@ namespace WinFormsHalloweenProject
         public static IRectangle Lerp(this IRectangle rect, IRectangle other, float factor)
         {
             rect.X = rect.X.Lerp(other.X, factor);
-            rect.Y = rect.X.Lerp(other.Y, factor);
-            rect.Width = rect.X.Lerp(other.Width, factor);
-            rect.Height = rect.X.Lerp(other.Height, factor);
+            rect.Y = rect.Y.Lerp(other.Y, factor);
+            rect.Width = rect.Width.Lerp(other.Width, factor);
+            rect.Height = rect.Height.Lerp(other.Height, factor);
             return rect;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -125,7 +125,7 @@ namespace WinFormsHalloweenProject
         public static bool Intersects(this IRectangle rect1, IRectangle rect2) => rect1.Intersects(rect2);
 
         /// <summary>
-        /// container's right intersects with contained left
+        /// detects if container rect's left intersects with the contained rect's right
         /// </summary>
         public static bool ContainsLeft(this IRectangle containerRECT, IRectangle isContainedRECT) => containerRECT.Left <= isContainedRECT.Right & containerRECT.Left >= isContainedRECT.Left & (containerRECT.Top <= isContainedRECT.Bottom & containerRECT.Bottom >= isContainedRECT.Top); //containerIRectangle contains the left of isContainedRECT
 
@@ -188,8 +188,11 @@ namespace WinFormsHalloweenProject
             return (containerRECT.Width + isContainedRECT.Width - leftDifference - rightDifference) / 2;
         }
 
-        public static bool GenerousContains(this Rectangle rect, Point target) => target.X >= rect.Left & target.X <= rect.Right & target.Y >= rect.Top & target.Y <= rect.Bottom;
+        public static bool GenerousContains(this IRectangle rect, Vector2 target) => target.X >= rect.Left & target.X <= rect.Right & target.Y >= rect.Top & target.Y <= rect.Bottom;
         public static bool MoneyGrubbingContains(this Rectangle rect, Point target) => target.X > rect.Left & target.X < rect.Right & target.Y > rect.Top & target.Y < rect.Bottom;
+
+        public static bool GenerousContains(this Rectangle rect, Point target) => target.X >= rect.Left & target.X <= rect.Right & target.Y >= rect.Top & target.Y <= rect.Bottom;
+        public static bool MoneyGrubbingContains(this IRectangle rect, Vector2 target) => target.X > rect.Left & target.X < rect.Right & target.Y > rect.Top & target.Y < rect.Bottom;
         public static bool Contains(this IRectangle rect, IRectangle targetRect) => rect.Contains(targetRect);
         public static bool MoneyGrubbingContains(this IRectangle rect, Point targetPoint) => rect.MoneyGrubbingContains(targetPoint);
         public static bool GenerousContains(this IRectangle rect, Point targetPoint) => rect.GenerousContains(targetPoint);
@@ -222,55 +225,109 @@ namespace WinFormsHalloweenProject
         }
         //public static double GetClosestPosition(this IRectangle a, Rectangle b, out Vector2 position, out Vector2 newSize)
         [Flags]
-        enum Horizontals
+        enum Directions : byte
         {
             None,
-            Left,
-            Right
+            Left = 1,
+            Right = 2,
+            Horizontal = Left | Right,
+            Top = 4,
+            Bottom = 8,
+            Vertical = Top | Bottom
         }
-        [Flags]
-        enum Verticals
-        {
-            None,
-            Top = 1,
-            Bottom
-        }
-        public static FloatTangle GetLargestBounds(this FloatTangle a, Vector2 startingLocation, Vector2 maxSize, IEnumerable<RECT> obstacles)
+        static Stack<Directions> dieRections = new Stack<Directions>();
+        static Dictionary<Directions, Func<RECT, FloatTangle, bool>> mods = new Dictionary<Directions, Func<RECT, FloatTangle, bool>>();
+        /// <summary>
+        /// this function is NOT multithread safe!
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="startingLocation"></param>
+        /// <param name="maxSize"></param>
+        /// <param name="obstacles"></param>
+        /// <returns></returns>
+        public static FloatTangle GetLargestBounds(this FloatTangle a, Vector2 startingLocation, Vector2 maxSize, IEnumerable<RECT> obstacles, Rectangle ScreenBounds)
         {
             Vector2 aspectRatio = maxSize / (Max(maxSize.X, maxSize.Y));
 
-            Horizontals horizontalFails = Horizontals.None;
-            Verticals verticalFails = Verticals.None;
+            Directions fails = Directions.None;
 
-            foreach (var obstacle in obstacles)
-            {
-                if (obstacle.Intersects(a))
-                {
-                    a = new FloatTangle(startingLocation, Vector2.Zero);
-                }    
-            }
+            mods[Directions.Left] = (r, f) => r.ContainsRight(a);
+            mods[Directions.Right] = (r, f) => r.ContainsLeft(a);
+            mods[Directions.Top] = (r, f) => r.ContainsBottom(a);
+            mods[Directions.Bottom] = (r, f) => r.ContainsTop(a);
 
-
-            while (a.Width < maxSize.X)
+            if (a.MoneyGrubbingContains(startingLocation))
             {
                 foreach (var obstacle in obstacles)
                 {
                     if (obstacle.Intersects(a))
                     {
-                        if (!horizontalFails.HasFlag(Horizontals.Left) && obstacle.ContainsLeft(a))
-                        {
-                            horizontalFails |= Horizontals.Left;
-                        }
-                        else if (!horizontalFails.HasFlag(Horizontals.Right) && obstacle.ContainsRight(a))
-                        {
-
-                        }
+                        a = new FloatTangle(startingLocation, Vector2.Zero);
+                        break;
                     }
                 }
-                //a.Left -= aspectRatio / 2;
+            }
+            else
+            {
+                a = new FloatTangle(startingLocation, Vector2.Zero);
 
             }
+
+            while (a.Width < maxSize.X & !fails.HasFlag(Directions.Vertical) & !fails.HasFlag(Directions.Horizontal))
+            {
+                if (a.Left <= ScreenBounds.Left)
+                {
+                    fails |= Directions.Left;
+                }
+                if (a.Right >= ScreenBounds.Right)
+                {
+                    fails |= Directions.Right;
+                }
+                if (a.Top <= ScreenBounds.Top)
+                {
+                    fails |= Directions.Top;
+                }
+                if (a.Bottom >= ScreenBounds.Bottom)
+                {
+                    fails |= Directions.Bottom;
+                }
+
+                foreach (var obstacle in obstacles)
+                {
+                    if (obstacle.Intersects(a))
+                    {
+                        foreach (var pair in mods)
+                        {
+                            if (pair.Value(obstacle, a))
+                            {
+                                a.Left += (GetInverseNthBit(fails, 0) * (GetNthBit(fails, 1) + 1)) * aspectRatio.X;
+                                a.Right -= GetInverseNthBit(fails, 1) * (GetNthBit(fails, 0) + 1) * aspectRatio.X;
+                                a.Top += GetInverseNthBit(fails, 2) * (GetNthBit(fails, 3) + 1) * aspectRatio.Y;
+                                a.Bottom -= GetInverseNthBit(fails, 3) * (GetNthBit(fails, 2) + 1) * aspectRatio.Y;
+                                fails |= pair.Key;
+                                dieRections.Push(pair.Key);
+                            }
+                        }
+                        while (dieRections.Count > 0)
+                        {
+                            mods.Remove(dieRections.Pop());
+                        }
+                    }                   
+                }
+                a.Left -= (GetInverseNthBit(fails, 0) * (GetNthBit(fails, 1) + 1)) * aspectRatio.X;
+                a.Right += GetInverseNthBit(fails, 1) * (GetNthBit(fails, 0) + 1) * aspectRatio.X;
+                a.Top -= GetInverseNthBit(fails, 2) * (GetNthBit(fails, 3) + 1) * aspectRatio.Y;
+                a.Bottom += GetInverseNthBit(fails, 3) * (GetNthBit(fails, 2) + 1) * aspectRatio.Y;
+                //a.Left -= aspectRatio / 2;
+            }
+            return a;
         }
+
+        static byte GetInverseNthBit(this Directions val, byte n) => ((byte)val).GetInverseNthBit(n);
+        public static byte GetInverseNthBit(this byte val, byte n) => (byte)((~(val >> n)) & 1);
+        static byte GetNthBit(this Directions val, byte n) => ((byte)val).GetNthBit(n);
+        public static byte GetNthBit(this byte val, byte n) => (byte)((val >> n) & 1);
+
         public static double GetClosestPosition(this IRectangle a, Rectangle b, Vector2 aspectRatio, out Vector2 position, out Vector2 newSize)
         {
             aspectRatio /= Math.Max(aspectRatio.X, aspectRatio.Y);

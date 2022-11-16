@@ -42,9 +42,9 @@ namespace WinFormsHalloweenProject
             public float X { get => Left; set => Left = (int)value; }
             public float Y { get => Top; set => Top = (int)value; }
 
-            float IRectangle.Width => Width;
+            float IRectangle.Width { get => Width; set => Right += (int)value - Width; }
 
-            float IRectangle.Height => Height;
+            float IRectangle.Height { get => Height; set => Bottom += (int)value - Height; }
 
             float IRectangle.Left => Left;
 
@@ -211,12 +211,13 @@ namespace WinFormsHalloweenProject
                 Bounds = (backingBoundsBackingField = value).ToRectangle();
             }
         }
+        FloatTangle wantedBounds;
         FloatTangle TrueBounds
         {
             get => new FloatTangle(BackingBounds.X + leftOffset * scale.X, BackingBounds.Y + topOffset * scale.Y, BackingBounds.Width - leftOffset * scale.X - rightOffset * scale.X, BackingBounds.Height - topOffset * scale.Y - bottomOffset * scale.Y);
             set
             {
-                var origScale = scale;
+              //  var origScale = scale;
                 scale = new Vector2(value.Width / startingBounds.X, value.Height / startingBounds.Y);
                 BackingBounds = new FloatTangle(value.X - leftOffset * scale.X, value.Y - topOffset * scale.Y, value.Width + leftOffset * scale.X + rightOffset * scale.X, value.Height + topOffset * scale.Y + bottomOffset * scale.Y);
             }
@@ -357,6 +358,7 @@ namespace WinFormsHalloweenProject
 
         public void SetParticle(Particle particle)
         {
+
             Tintmap particleKey = (particlesTextures.RandomValue(), tints.RandomValue());
             try
             {
@@ -394,9 +396,9 @@ namespace WinFormsHalloweenProject
 
                 particle.SetData(particleKey, chosenTexture, this, 500, 500, new Point(Bounds.X + Bounds.Width / 2 - (int)(chosenTexture.Width * .05f), Bounds.Bottom - (int)(chosenTexture.Height * .1f)), MovementVector, (float)particleScale / 10);
             }
-            catch (System.InvalidOperationException)
+            catch (Exception blah) when (blah is System.InvalidOperationException || blah is System.OutOfMemoryException)
             {
-                Console.WriteLine($"Multiple particles accessing cache at once {DateTime.Now}");
+                Console.WriteLine($"{blah}\nMultiple particles accessing cache at once {DateTime.Now}");
                 particle.SetData(new Point(Bounds.X + Bounds.Width / 2), MovementVector);
                 return;
             }
@@ -427,7 +429,7 @@ namespace WinFormsHalloweenProject
             BackgroundImage = images[currentIndex];
             currentIndex = (currentIndex + 1) % images.Length;
 
-            //shake = new Size(rand.NextError(degree), rand.NextError(degree));
+            //shake = new Size(rand.NextError(deg            TrueBounds =  (FloatTangle)TrueBounds.Lerp(wantedBounds, .1f);ree), rand.NextError(degree));
             lerpPercent += rand.NextError(lerpIncrement);
             lerpPercent = Math.Clamp(lerpPercent, 0, 1);
             Opacity = 1d.Lerp(0, lerpPercent);
@@ -516,6 +518,7 @@ namespace WinFormsHalloweenProject
         // const double wantedSpeed = 5;
         private void Movement_Tick(object sender, EventArgs e)
         {
+            TrueBounds = (FloatTangle)TrueBounds.Lerp(wantedBounds, .1f);
             if (GetPath(false, ref pathResult, out var spaces))
             {
                 Console.WriteLine("new path");
@@ -534,10 +537,10 @@ namespace WinFormsHalloweenProject
                     // evilRect = new RECT(Math.Min(endGoal.Left, evilRect.Left), Math.Min(endGoal.Top, evilRect.Top), Math.Max(endGoal.Right, evilRect.Right), Math.Max(endGoal.Bottom, evilRect.Bottom));
 
                     //var newBounds = Declamp(TrueBounds, evilRect.Left, evilRect.Right, evilRect.Top, evilRect.Bottom);
-                    var newBounds = TrueBounds.GetClosestBounds(graph.AspectRatio, spaces);
-                    TrueBounds = newBounds;
+                    var newBounds = wantedBounds.GetClosestBounds(graph.AspectRatio, spaces);
+                    wantedBounds = newBounds;
                     #region Mikah IDK
-                    if (TrueBounds.Equals(newBounds))
+                    if (wantedBounds.Equals(newBounds))
                     {
                         //T OD O RO L IS T:
                         //make the GetClosestBounds take into account aspect ratio
@@ -545,9 +548,14 @@ namespace WinFormsHalloweenProject
                         //make it so the ghost increases in size when it has the chance
                     }
                     #endregion
-                    trueLocation = TrueBounds.GetCenter();
+                    trueLocation = wantedBounds.GetCenter();
 
                     CurrentPath = graph.GetPath(CurrentWindows, trueLocation.ToPoint(), out pathResult, out endGoal, out spaces);
+                }
+                if (pathResult == PathStatus.NoPath)
+                {
+                    Console.WriteLine("Walked into a wall :(");
+                    return;
                 }
 
                 distances = new float[CurrentPath.Length - 1];
@@ -564,25 +572,28 @@ namespace WinFormsHalloweenProject
                 Console.WriteLine("Nowhere the ghost can go...you monster");
                 return;
             }
+
+
+
             MovementVector = oldLocation - (Size)Location;
             oldLocation = (Size)Location;
 
-            try
-            {
-                trueLocation = new Vector2(Math.Clamp(trueLocation.X, Screen.PrimaryScreen.Bounds.Left, Screen.PrimaryScreen.Bounds.Right - TrueBounds.Width), Math.Clamp(trueLocation.Y, Screen.PrimaryScreen.Bounds.Top, Screen.PrimaryScreen.Bounds.Bottom - TrueBounds.Height));
+            //try
+            //{
+            //    trueLocation = new Vector2(Math.Clamp(trueLocation.X, Screen.PrimaryScreen.Bounds.Left, Screen.PrimaryScreen.Bounds.Right - TrueBounds.Width), Math.Clamp(trueLocation.Y, Screen.PrimaryScreen.Bounds.Top, Screen.PrimaryScreen.Bounds.Bottom - TrueBounds.Height));
 
-            }
-            catch
-            {
-                ;
-            }
+            //}
+            //catch
+            //{
+            //    ;
+            //}
 
-            if (vibing = vibing || endGoal.Contains(TrueBounds.ToRectangle()))
+            if (vibing = vibing || endGoal.GetCenter().Distance(trueLocation.ToPoint()) < endGoal.Width / 10)
             {
                 Console.WriteLine("vibing");
                 //vibe
                 //TrueBounds = Wander();
-                TrueBounds = new FloatTangle(trueLocation.X - TrueBounds.Width / 2, trueLocation.Y - TrueBounds.Width / 2, TrueBounds.Width, TrueBounds.Height);
+                wantedBounds = wantedBounds.GetLargestBounds(trueLocation, startingBounds, CurrentWindows, Screen.PrimaryScreen.Bounds);
                 //    Location = new Point(trueLocation.X - TrueBounds.Width / 2 + rand.Next(-5, 5), trueLocation.Y - TrueBounds.Width / 2 + +rand.Next(-5, 5));
                 return;
             }
@@ -609,7 +620,7 @@ namespace WinFormsHalloweenProject
             //else
             //{
             #endregion
-            var lerpChange = Math.Clamp(globalLerpFactor * (1 + (globalLerpFactor <= .5).ToByte() * 2 - 1) * .1f, .001f, .005f);
+            var lerpChange = Math.Clamp(globalLerpFactor * (1 + (globalLerpFactor <= .75).ToByte() * 2 - 1) * .1f, .001f, .005f);
             globalLerpFactor += lerpChange;
             currentDistance = 0f.Lerp(totalDistance, globalLerpFactor);
             if (vibing = globalLerpFactor >= 1) return;
@@ -622,8 +633,8 @@ namespace WinFormsHalloweenProject
 
             trueLocation = trueLocation.Lerp(CurrentPath[pathIndex + 1].ToVector2(), (currentDistance - (targetDistance - distances[pathIndex])) / distances[pathIndex]);
 
-            var old = TrueBounds = new FloatTangle(trueLocation.X - TrueBounds.Width / 2, trueLocation.Y - TrueBounds.Width / 2, TrueBounds.Width, TrueBounds.Height);            
-            TrueBounds = TrueBounds.GetBiggestRECT(startingBounds, CurrentWindows);
+            // TrueBounds = new FloatTangle(trueLocation.X - TrueBounds.Width / 2, trueLocation.Y - TrueBounds.Width / 2, TrueBounds.Width, TrueBounds.Height);
+            var old = wantedBounds = wantedBounds.GetLargestBounds(trueLocation, startingBounds, CurrentWindows, Screen.PrimaryScreen.Bounds); //TrueBounds.GetBiggestRECT(startingBounds, CurrentWindows);
             if (TrueBounds.Height > 200)
                 ;
         }
@@ -637,6 +648,7 @@ namespace WinFormsHalloweenProject
             FloatTangle tentativeRectangle = new FloatTangle(TrueBounds.Left + deltaX, TrueBounds.Top + deltaY, TrueBounds.Right + deltaX, TrueBounds.Bottom + deltaY);
             bool switchXDirection = false;
             bool switchYDirection = false;
+            
             foreach (RECT window in CurrentWindows)
             {
                 if (window.Intersects(tentativeRectangle))
