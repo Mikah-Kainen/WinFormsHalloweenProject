@@ -16,8 +16,8 @@ namespace WinformsHalloweenProject
     {
         float X { get; set; }
         float Y { get; set; }
-        float Width { get; /*set;*/ }
-        float Height { get; /*set;*/ }
+        float Width { get; set; }
+        float Height { get; set; }
         float Left { get; }
         float Right { get; }
         float Top { get; }

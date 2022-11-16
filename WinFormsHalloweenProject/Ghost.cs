@@ -413,7 +413,7 @@ namespace WinFormsHalloweenProject
                     }
                 }
             }
-            catch (System.InvalidOperationException)
+            catch (Exception blah) when (blah is InvalidOperationException || blah is OutOfMemoryException)
             {
                 Console.WriteLine($"{blah}\nMultiple particles accessing cache at once {DateTime.Now}");
                 particle.SetData(new Point(Bounds.X + Bounds.Width / 2), MovementVector);
@@ -659,10 +659,11 @@ namespace WinFormsHalloweenProject
 
                 trueLocation = trueLocation.Lerp(CurrentPath[pathIndex + 1].ToVector2(), (currentDistance - (targetDistance - distances[pathIndex])) / distances[pathIndex]);
 
-            // TrueBounds = new FloatTangle(trueLocation.X - TrueBounds.Width / 2, trueLocation.Y - TrueBounds.Width / 2, TrueBounds.Width, TrueBounds.Height);
-            var old = wantedBounds = wantedBounds.GetLargestBounds(trueLocation, startingBounds, CurrentWindows, Screen.PrimaryScreen.Bounds); //TrueBounds.GetBiggestRECT(startingBounds, CurrentWindows);
-            if (TrueBounds.Height > 200)
-                ;
+                // TrueBounds = new FloatTangle(trueLocation.X - TrueBounds.Width / 2, trueLocation.Y - TrueBounds.Width / 2, TrueBounds.Width, TrueBounds.Height);
+                var old = wantedBounds = wantedBounds.GetLargestBounds(trueLocation, startingBounds, CurrentWindows, Screen.PrimaryScreen.Bounds); //TrueBounds.GetBiggestRECT(startingBounds, CurrentWindows);
+                if (TrueBounds.Height > 200)
+                    ;
+            }
         }
         //Location = new Point(trueLocation.X - TrueBounds.Width / 2 + rand.Next(-5, 5), trueLocation.Y - TrueBounds.Width / 2 + +rand.Next(-5, 5));
 
