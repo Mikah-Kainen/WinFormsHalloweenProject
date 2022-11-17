@@ -183,15 +183,17 @@ namespace WinFormsHalloweenProject
         public static Random rand = new Random();
         static Point startingPoint = new Point(10, 10);
         const double ghostScale = .5;
-        const double particleScale = 1;
+        const double particleScale = .1;
         int currentIndex = 0;
         Bitmap[] images;
 
         #region GhostWanderingVariables
         private const int targetXSpeed = 5;
         private const int targetYSpeed = 5;
-        private Point currentSpeed;
-        private Point currentDirection;
+        float deltaX = 0;
+        float deltaY = 0;
+        private Point currentSpeed = new Point(targetXSpeed, targetYSpeed);
+        private Vector2 currentDirection = Vector2.One;
         #endregion
 
         bool start = true;
@@ -249,6 +251,7 @@ namespace WinFormsHalloweenProject
         float[] distances;
 
         Vector2 trueLocation;
+        Vector2 lastLerpPoint;
 
         const int degree = 3;
         const double lerpIncrement = .05;
@@ -401,7 +404,8 @@ namespace WinFormsHalloweenProject
                     var chosenTexture = particleTexture.maps.First.Value;
                     particleTexture.maps.RemoveFirst();
 
-                    particle.SetData(particleKey, chosenTexture, this, 500, 500, new Point(Bounds.X + Bounds.Width / 2 - (int)(chosenTexture.Width * .05f), Bounds.Bottom - (int)(chosenTexture.Height * .1f)), MovementVector, (float)particleScale / 10);
+                    var currScale = particleScale * scale.X;
+                    particle.SetData(particleKey, chosenTexture, this, 500, 500, new Point(Bounds.X + Bounds.Width / 2 - (int)(chosenTexture.Width * currScale / 2), Bounds.Bottom - (int)(chosenTexture.Height * currScale)), MovementVector + new Size(rand.Next(0, 2), rand.Next(0, 2)), (float)currScale);
 
                 }
                 catch (NullReferenceException)
@@ -532,7 +536,7 @@ namespace WinFormsHalloweenProject
             return false;
         }
 
-        // const double wantedSpeed = 5;
+         const float wantedSpeed = 5;
         private void Movement_Tick(object sender, EventArgs e)
         {
             TrueBounds = (FloatTangle)TrueBounds.Lerp(wantedBounds, .1f);
@@ -590,6 +594,7 @@ namespace WinFormsHalloweenProject
                     oldPoint = CurrentPath[i];
                 }
                 targetDistance = 0;
+                lastLerpPoint = trueLocation;
             }
             else if (pathResult == PathStatus.NoPath)
             {
@@ -616,10 +621,11 @@ namespace WinFormsHalloweenProject
             {
                 Console.WriteLine("vibing");
                 //vibe
-                //TrueBounds = Wander();
-                wantedBounds = wantedBounds.GetLargestBounds(trueLocation, startingBounds, CurrentWindows, Screen.PrimaryScreen.Bounds);
+                Wander();
+               // TrueBounds = wantedBounds = wantedBounds.GetLargestBounds(trueLocation, startingBounds, CurrentWindows, Screen.PrimaryScreen.Bounds);
+
                 //    Location = new Point(trueLocation.X - TrueBounds.Width / 2 + rand.Next(-5, 5), trueLocation.Y - TrueBounds.Width / 2 + +rand.Next(-5, 5));
-             //   TrueBounds = TrueBounds.GetBiggestRECT(startingBounds, CurrentWindows);
+                //   TrueBounds = TrueBounds.GetBiggestRECT(startingBounds, CurrentWindows);
                 return;
             }
             Console.WriteLine("Not vibing :(");
@@ -645,37 +651,85 @@ namespace WinFormsHalloweenProject
             //else
             //{
             #endregion
-            var lerpChange = Math.Clamp(globalLerpFactor * (1 + (globalLerpFactor <= .75).ToByte() * 2 - 1) * .1f, .001f, .005f);
+            var lerpChange = Math.Clamp(globalLerpFactor * (1 + (globalLerpFactor <= .75).ToByte() * 2 - 1) * .1f, 1f, 5f) * (wantedSpeed / totalDistance) * scale.X;
             globalLerpFactor += lerpChange;
             currentDistance = 0f.Lerp(totalDistance, globalLerpFactor);
             if (!(vibing = globalLerpFactor >= 1))
             {
                 if (currentDistance >= targetDistance)
                 {
+                    lastLerpPoint = trueLocation;
                     targetDistance += distances[++pathIndex];
                 }
 
 
-
-                trueLocation = trueLocation.Lerp(CurrentPath[pathIndex + 1].ToVector2(), (currentDistance - (targetDistance - distances[pathIndex])) / distances[pathIndex]);
+                var oldLocation = trueLocation;
+                trueLocation = lastLerpPoint.Lerp(CurrentPath[pathIndex + 1].ToVector2(), (currentDistance - (targetDistance - distances[pathIndex])) / distances[pathIndex]);
+                
 
                 // TrueBounds = new FloatTangle(trueLocation.X - TrueBounds.Width / 2, trueLocation.Y - TrueBounds.Width / 2, TrueBounds.Width, TrueBounds.Height);
-                var old = wantedBounds = wantedBounds.GetLargestBounds(trueLocation, startingBounds, CurrentWindows, Screen.PrimaryScreen.Bounds); //TrueBounds.GetBiggestRECT(startingBounds, CurrentWindows);
-                if (TrueBounds.Height > 200)
-                    ;
+                var old = wantedBounds = wantedBounds.GetLargestBounds(trueLocation, oldLocation, startingBounds, CurrentWindows, Screen.PrimaryScreen.Bounds); //TrueBounds.GetBiggestRECT(startingBounds, CurrentWindows);
+                //if (TrueBounds.Height > 200)
+                //    ;
+                //Console.WriteLine($"{globalLerpFactor}, {(currentDistance - (targetDistance - distances[pathIndex])) / distances[pathIndex]},\n{trueLocation},\n{wantedBounds}");
             }
         }
         //Location = new Point(trueLocation.X - TrueBounds.Width / 2 + rand.Next(-5, 5), trueLocation.Y - TrueBounds.Width / 2 + +rand.Next(-5, 5));
 
-        private new FloatTangle Wander()
+        private void Wander()
         {
-            Console.WriteLine("Wandering");
-            int deltaX = currentSpeed.X * currentDirection.X;
-            int deltaY = currentSpeed.Y * currentDirection.Y;
-            FloatTangle tentativeRectangle = new FloatTangle(TrueBounds.Left + deltaX, TrueBounds.Top + deltaY, TrueBounds.Right + deltaX, TrueBounds.Bottom + deltaY);
-            bool switchXDirection = false;
-            bool switchYDirection = false;
+           // Console.WriteLine($"Bounds are {Bounds}, backing are {BackingBounds}, true are {TrueBounds}, wanted are {wantedBounds}, location is {trueLocation}");
+
             
+            foreach (var window in CurrentWindows)
+            {
+                if (window.Intersects(wantedBounds))
+                {
+                    if (window.IntersectsLeft(wantedBounds, Math.Abs(deltaX)))
+                    {
+                        currentDirection.X = -Math.Abs(currentDirection.X);
+                    }
+                    else if (window.IntersectsRight(wantedBounds, Math.Abs(deltaX)))
+                    {
+                        currentDirection.X = Math.Abs(currentDirection.X);
+                    }
+
+                    if (window.IntersectsTop(wantedBounds, Math.Abs(deltaY)))
+                    {
+                        currentDirection.Y = -Math.Abs(currentDirection.Y);
+                    }
+                    else if (window.IntersectsBottom(wantedBounds, Math.Abs(deltaY)))
+                    {
+                        currentDirection.Y = Math.Abs(currentDirection.Y);
+                    }
+                }
+            }
+
+            if (wantedBounds.X <= Screen.PrimaryScreen.Bounds.Left)
+            {
+                currentDirection.X = Math.Abs(currentDirection.X);
+            }
+            else if (wantedBounds.Right >= Screen.PrimaryScreen.Bounds.Right)
+            {
+                currentDirection.X = -Math.Abs(currentDirection.X);
+            }
+            if (wantedBounds.Y <= Screen.PrimaryScreen.Bounds.Top)
+            {
+                currentDirection.Y = Math.Abs(currentDirection.Y);
+            }
+            else if (wantedBounds.Bottom >= Screen.PrimaryScreen.Bounds.Bottom)
+            {
+                currentDirection.Y = -Math.Abs(currentDirection.Y);
+            }
+
+            deltaX = currentSpeed.X * currentDirection.X * scale.X * (float)rand.NextDouble();
+            deltaY = currentSpeed.Y * currentDirection.Y * scale.Y * (float)rand.NextDouble();
+
+            wantedBounds.X += deltaX;
+            wantedBounds.Y += deltaY;
+
+            #region MikahIK
+            /*
             foreach (RECT window in CurrentWindows)
             {
                 if (window.Intersects(tentativeRectangle))
@@ -714,22 +768,34 @@ namespace WinFormsHalloweenProject
                     //whichever overlap is the largest is the side that the ghost needs to be pushed out of and the side that the direction of movement should be switched
                 }
             }
-            foreach (RECT rect in CurrentWindows)
-            {
-                if (rect.Intersects(tentativeRectangle))
-                {
-                    Console.WriteLine("Oh wow this case actually happens(in the Wander function)");
-                }
-            }
-            if (switchXDirection)
-            {
-                currentDirection.X *= -1;
-            }
-            if (switchYDirection)
-            {
-                currentDirection.Y *= -1;
-            }
-            return tentativeRectangle;
+            */
+            #endregion
+            #region MikahIDK
+
+
+            //FloatTangle tentativeRectangle = new FloatTangle(wantedBounds.Left + deltaX, TrueBounds.Top + deltaY, TrueBounds.Right + deltaX, TrueBounds.Bottom + deltaY);
+            //bool switchXDirection = false;
+            //bool switchYDirection = false;
+
+            //foreach (RECT rect in CurrentWindows)
+            //{
+            //    if (rect.Intersects(tentativeRectangle))
+            //    {
+            //        Console.WriteLine("Oh wow this case actually happens(in the Wander function)");
+            //    }
+            //}
+
+
+            //if (switchXDirection)
+            //{
+            //    currentDirection.X *= -1;
+            //}
+            //if (switchYDirection)
+            //{
+            //    currentDirection.Y *= -1;
+            //}
+            #endregion
+
         }
         //public Point Declamp(Point val, int xMin, int xMax, int yMin, int yMax)
         //{

@@ -79,6 +79,10 @@ namespace WinformsHalloweenProject
         public float Top { get => Y; set { Height += Y - value; Y = value; } }
         public float Bottom { get => Y + Height; set => Height = value - Y; }
 
+        public override string ToString()
+        {
+            return $"({X}, {Y}, {Width}, {Height})";
+        }
         public Vector2 Location => new Vector2(X, Y);
     }
 }

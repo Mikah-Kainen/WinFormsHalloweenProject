@@ -127,8 +127,13 @@ namespace WinFormsHalloweenProject
         /// <summary>
         /// detects if container rect's left intersects with the contained rect's right
         /// </summary>
-        public static bool ContainsLeft(this IRectangle containerRECT, IRectangle isContainedRECT) => containerRECT.Left <= isContainedRECT.Right & containerRECT.Left >= isContainedRECT.Left & (containerRECT.Top <= isContainedRECT.Bottom & containerRECT.Bottom >= isContainedRECT.Top); //containerIRectangle contains the left of isContainedRECT
 
+        public static bool IntersectsLeft(this IRectangle a, IRectangle other, float marginOfError) => Math.Abs(a.Left - other.Right) <= marginOfError;
+        public static bool IntersectsRight(this IRectangle a, IRectangle other, float marginOfError) => Math.Abs(a.Right - other.Left) <= marginOfError;
+        public static bool IntersectsTop(this IRectangle a, IRectangle other, float marginOfError) => Math.Abs(a.Top - other.Bottom) <= marginOfError;
+        public static bool IntersectsBottom(this IRectangle a, IRectangle other, float marginOfError) => Math.Abs(a.Bottom - other.Top) <= marginOfError;
+
+        public static bool ContainsLeft(this IRectangle containerRECT, IRectangle isContainedRECT) => containerRECT.Left <= isContainedRECT.Right & containerRECT.Left >= isContainedRECT.Left & (containerRECT.Top <= isContainedRECT.Bottom & containerRECT.Bottom >= isContainedRECT.Top); //containerIRectangle contains the left of isContainedRECT        
         /// <summary>
         /// container's Bottom intersects with contained top
         /// </summary>
@@ -245,9 +250,12 @@ namespace WinFormsHalloweenProject
         /// <param name="maxSize"></param>
         /// <param name="obstacles"></param>
         /// <returns></returns>
-        public static FloatTangle GetLargestBounds(this FloatTangle a, Vector2 startingLocation, Vector2 maxSize, IEnumerable<RECT> obstacles, Rectangle ScreenBounds)
+        public static FloatTangle GetLargestBounds(this FloatTangle a, Vector2 startingLocation, Vector2 previousLocation, Vector2 maxSize, IEnumerable<RECT> obstacles, Rectangle ScreenBounds)
         {
             Vector2 aspectRatio = maxSize / (Max(maxSize.X, maxSize.Y));
+
+            var amountMoved = startingLocation - previousLocation;
+            a.X += amountMoved.X; a.Y += amountMoved.Y;
 
             Directions fails = Directions.None;
 
