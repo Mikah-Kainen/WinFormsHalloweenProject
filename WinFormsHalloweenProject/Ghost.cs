@@ -76,6 +76,55 @@ namespace WinFormsHalloweenProject
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool IsWindowVisible(IntPtr hwnd);
 
+        [DllImport("dwmapi.dll")]
+        static extern uint DwmGetWindowAttribute(IntPtr hwnd, DWMWINDOWATTRIBUTE dwAttribute, out bool pvAttribute, int cbAttribute);
+
+        enum DWMWINDOWATTRIBUTE
+        {
+            DWMWA_NCRENDERING_ENABLED,
+            DWMWA_NCRENDERING_POLICY,
+            DWMWA_TRANSITIONS_FORCEDISABLED,
+            DWMWA_ALLOW_NCPAINT,
+            DWMWA_CAPTION_BUTTON_BOUNDS,
+            DWMWA_NONCLIENT_RTL_LAYOUT,
+            DWMWA_FORCE_ICONIC_REPRESENTATION,
+            DWMWA_FLIP3D_POLICY,
+            DWMWA_EXTENDED_FRAME_BOUNDS,
+            DWMWA_HAS_ICONIC_BITMAP,
+            DWMWA_DISALLOW_PEEK,
+            DWMWA_EXCLUDED_FROM_PEEK,
+            DWMWA_CLOAK,
+            DWMWA_CLOAKED,
+            DWMWA_FREEZE_REPRESENTATION,
+            DWMWA_PASSIVE_UPDATE_MODE,
+            DWMWA_USE_HOSTBACKDROPBRUSH,
+            DWMWA_USE_IMMERSIVE_DARK_MODE = 20,
+            DWMWA_WINDOW_CORNER_PREFERENCE = 33,
+            DWMWA_BORDER_COLOR,
+            DWMWA_CAPTION_COLOR,
+            DWMWA_TEXT_COLOR,
+            DWMWA_VISIBLE_FRAME_BORDER_THICKNESS,
+            DWMWA_SYSTEMBACKDROP_TYPE,
+            DWMWA_LAST
+        }
+
+        bool IsWindowCloaked(IntPtr windowHandle)
+        {
+            bool isCloaked;
+            uint result = DwmGetWindowAttribute(windowHandle, DWMWINDOWATTRIBUTE.DWMWA_CLOAKED, out isCloaked, sizeof(bool));
+            bool didFail = result >> 31 == 1;
+
+            return isCloaked && !didFail;
+            //for more information visit:
+            //https://learn.microsoft.com/en-us/windows/win32/api/dwmapi/ne-dwmapi-dwmwindowattribute
+        }
+
+        bool IsWindowVisibleOnScreen(IntPtr windowHandle)
+        {
+            return IsWindowVisible(windowHandle) &&
+                   !IsWindowCloaked(windowHandle);
+        }
+
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -110,8 +159,7 @@ namespace WinFormsHalloweenProject
         }
 
 
-
-
+        #region EddenIDK
         /// <summary>
         ///     Copies the text of the specified window's title bar (if it has one) into a buffer. If the specified window is a
         ///     control, the text of the control is copied. However, GetWindowText cannot retrieve the text of a control in another
@@ -154,6 +202,7 @@ namespace WinFormsHalloweenProject
         ///     </see>
         /// </remarks>
         /// 
+        #endregion
 
         [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
         static extern int GetWindowTextLength(IntPtr hWnd);
@@ -170,6 +219,7 @@ namespace WinFormsHalloweenProject
             return sb.ToString();
         }
 
+        #region AncientHistory
         /// <summary>
         /// ///////////////////////////////////////////NEED TO MAKE A MAP FOR GHOST NAVIGATION!! GOOD lUCK FUTURE SELF
         /// First identify the open spaces on the graph
@@ -177,6 +227,75 @@ namespace WinFormsHalloweenProject
         /// A* there with the A* returning a pixel by pixel path including the path width and the ghost calculating how much it can shake each step of the way
         /// Maybe a rectangle by rectangle path?
         /// </summary>
+        #endregion
+
+        #region AwesomePlanning
+        //for help look at:
+        //https://learn.microsoft.com/en-us/windows/win32/api/shellapi/nf-shellapi-shappbarmessage?redirectedfrom=MSDN
+        //https://www.pcreview.co.uk/threads/taskbar-height-and-location.3387688/
+        #endregion
+        [DllImport("SHELL32", CallingConvention = CallingConvention.StdCall)]
+        static extern uint SHAppBarMessage(int dwMessage, ref APPBARDATA pData);
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct APPBARDATA
+        {
+            public int cbSize;
+            public IntPtr hWnd;
+            public int uCallbackMessage;
+            public int uEdge;
+            public RECT rc;
+            public IntPtr lParam;
+        }
+
+        enum AppBarMessages
+        {
+            ABM_NEW = 0,
+            ABM_REMOVE = 1,
+            ABM_QUERYPOS = 2,
+            ABM_SETPOS = 3,
+            ABM_GETSTATE = 4,
+            ABM_GETTASKBARPOS = 5,
+            ABM_ACTIVATE = 6,
+            ABM_GETAUTOHIDEBAR = 7,
+            ABM_SETAUTOHIDEBAR = 8,
+            ABM_WINDOWPOSCHANGED = 9,
+            ABM_SETSTATE = 10,
+            ABM_GETAUTOHIDEBAREX = 11,
+            ABM_SETAUTOHIDEBAREX = 12,
+        }
+
+        enum AppBarEdge
+        {
+            Bottom = 0,
+            Top = 1,
+            Left = 2,
+            Right = 3,
+        }
+
+        enum AppBarState : int
+        {
+            ABS_MANUAL = 0,
+            ABS_AUTOHIDE = 1,
+            ABS_ALWAYSONTOP = 2,
+            ABS_AUTOHIDEANDONTOP = 3,
+        }
+
+        public RECT GetTaskBarBounds()
+            //Gets the TaskBar bounds if the task bar is not on auto-hide. If the task bar is on auto-hide will return (0, 0, 0, 0). Does not return task bar size if the task bar is visible in auto-hide mode
+        {
+            APPBARDATA appBarData = new APPBARDATA();
+            var useless = SHAppBarMessage((int)AppBarMessages.ABM_GETTASKBARPOS, ref appBarData);
+            RECT returnRECT = appBarData.rc;
+
+            //IntPtr appBarHandle = (IntPtr)SHAppBarMessage((int)AppBarMessages.ABM_GETAUTOHIDEBAR, ref appBarData);
+            uint currentState = SHAppBarMessage((int)AppBarMessages.ABM_GETSTATE, ref appBarData);
+            if (currentState == (uint)AppBarState.ABS_AUTOHIDE)
+            {
+                return new RECT(0, 0, 0, 0);
+            }
+            return returnRECT;
+        }
         #endregion
 
 
@@ -224,7 +343,7 @@ namespace WinFormsHalloweenProject
             get => new FloatTangle(new Vector2(BackingBounds.X + leftOffset * scale.X, BackingBounds.Y + topOffset * scale.Y), new Vector2(BackingBounds.Width - leftOffset * scale.X - rightOffset * scale.X, BackingBounds.Height - topOffset * scale.Y - bottomOffset * scale.Y));
             set
             {
-              //  var origScale = scale;
+                //  var origScale = scale;
                 scale = new Vector2(value.Width / startingBounds.X, value.Height / startingBounds.Y);
                 BackingBounds = new FloatTangle(new Vector2(value.X - leftOffset * scale.X, value.Y - topOffset * scale.Y), new Vector2(value.Width + leftOffset * scale.X + rightOffset * scale.X, value.Height + topOffset * scale.Y + bottomOffset * scale.Y));
             }
@@ -500,7 +619,7 @@ namespace WinFormsHalloweenProject
                 }
                 if (isGhost) continue;
 
-                if (IsWindowVisible(windowHandles[i]))
+                if (IsWindowVisibleOnScreen(windowHandles[i]))
                 {
                     RECT temp;
                     GetWindowRect(new HandleRef(IntPtr.Zero, windowHandles[i]), out temp);
@@ -508,7 +627,7 @@ namespace WinFormsHalloweenProject
                     var handleText = GetText(windowHandles[i]);
                     int width = temp.Right - temp.Left;
                     int height = temp.Bottom - temp.Top;
-                    if ((handleText != "Cortana" && handleText != "" && handleText != "Mail" && handleText != "Alienware Command Center" && handleText != "Settings" && handleText != "Calculator" && (width >= minWindowWidth | height >= minWindowHeight) & (width <= maxWindowWidth | height <= maxWindowHeight) & (temp.Left < Screen.PrimaryScreen.Bounds.Right & temp.Top < Screen.PrimaryScreen.Bounds.Bottom & temp.Right > Screen.PrimaryScreen.Bounds.Left & temp.Bottom > Screen.PrimaryScreen.Bounds.Top)) && !CurrentWindows.Contains(temp))
+                    if ((/*handleText != "Cortana" && handleText != "" && handleText != "Mail" && handleText != "Alienware Command Center" && handleText != "Settings" && handleText != "Calculator" && */(width >= minWindowWidth | height >= minWindowHeight) & (width <= maxWindowWidth | height <= maxWindowHeight) & (temp.Left < Screen.PrimaryScreen.Bounds.Right & temp.Top < Screen.PrimaryScreen.Bounds.Bottom & temp.Right > Screen.PrimaryScreen.Bounds.Left & temp.Bottom > Screen.PrimaryScreen.Bounds.Top)) && !CurrentWindows.Contains(temp))
                     {
                         CurrentWindows.Add(temp);
                     }
@@ -539,6 +658,8 @@ namespace WinFormsHalloweenProject
          const float wantedSpeed = 5;
         private void Movement_Tick(object sender, EventArgs e)
         {
+            var result = GetTaskBarBounds();
+
             TrueBounds = (FloatTangle)TrueBounds.Lerp(wantedBounds, .1f);
             if (GetPath(false, ref pathResult, out var spaces))
             {
