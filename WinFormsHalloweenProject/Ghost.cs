@@ -230,11 +230,11 @@ namespace WinFormsHalloweenProject
             }
         }
 
-        const int minWindowWidth = 50;
-        const int minWindowHeight = 50;
+        const int minWindowWidth = 1;
+        const int minWindowHeight = 1;
 
-        readonly int maxWindowWidth = Screen.PrimaryScreen.Bounds.Width - 100;
-        readonly int maxWindowHeight = Screen.PrimaryScreen.Bounds.Height - 100;
+        readonly int maxWindowWidth = Screen.PrimaryScreen.Bounds.Width - 1;
+        readonly int maxWindowHeight = Screen.PrimaryScreen.Bounds.Height - 1;
 
 
         public HashSet<RECT> CurrentWindows = new HashSet<RECT>();
@@ -367,10 +367,10 @@ namespace WinFormsHalloweenProject
         public void SetParticle(Particle particle)
         {
 
-            Tintmap particleKey = (particlesTextures.RandomValue(), tints.RandomValue());
+            
             try
             {
-
+                Tintmap particleKey = (particlesTextures.RandomValue(), tints.RandomValue());
                 Color chosenTint = particleKey.Item2;
                 if (!particleCache.TryGetValue(particleKey, out var particleTexture))
                 {
@@ -428,6 +428,67 @@ namespace WinFormsHalloweenProject
 
         private void Animation_Tick(object sender, EventArgs e)
         {
+            if (GetPath(false, ref pathResult, out var spaces))
+            {
+                start = false;
+                Console.WriteLine("new path");
+                vibing = false;
+                pathIndex = -1;
+                globalLerpFactor = 0.001f;
+                currentDistance = 0;
+                totalDistance = 0;
+
+                if (pathResult == PathStatus.NoPath) return;
+
+                var prevLocation = trueLocation;
+                RECT evilRect = endGoal.ToRECT();
+                if (pathResult == PathStatus.GhostInWall)
+                {
+                    // evilRect = new RECT(Math.Min(endGoal.Left, evilRect.Left), Math.Min(endGoal.Top, evilRect.Top), Math.Max(endGoal.Right, evilRect.Right), Math.Max(endGoal.Bottom, evilRect.Bottom));
+
+                    //var newBounds = Declamp(TrueBounds, evilRect.Left, evilRect.Right, evilRect.Top, evilRect.Bottom);
+                    var newBounds = wantedBounds.GetClosestBounds(graph.AspectRatio, spaces);
+                    wantedBounds = newBounds;
+                    #region Mikah IDK
+                    if (wantedBounds.Equals(newBounds))
+                    {
+                        //T OD O RO L IS T:
+                        //make it so the ghost doesn't stop on each step of the path. 
+                        //make a min ghost size.
+                        //check if the ghost is sometimes missing paths because they are too small.
+                        //check scaling to see if the black line still appears and if it does stop scaling the whole winform.
+                        //make the wandering function work.
+                        //test(especially the startup hooks).
+                        //deploy.
+                        //party.
+                        //work on the attendance automizer.
+                    }
+                    #endregion
+                    trueLocation = wantedBounds.GetCenter();
+
+                    CurrentPath = graph.GetPath(CurrentWindows, trueLocation.ToPoint(), out pathResult, out endGoal, out spaces);
+                }
+                if (pathResult == PathStatus.NoPath)
+                {
+                    Console.WriteLine("Walked into a wall :(");
+                    return;
+                }
+
+                distances = new float[CurrentPath.Length - 1];
+                var oldPoint = CurrentPath[0];
+                for (int i = 1; i < CurrentPath.Length; i++)
+                {
+                    totalDistance += distances[i - 1] = (float)oldPoint.Distance(CurrentPath[i]);
+                    oldPoint = CurrentPath[i];
+                }
+                targetDistance = 0;
+                lastLerpPoint = trueLocation;
+            }
+            else if (pathResult == PathStatus.NoPath)
+            {
+                Console.WriteLine("Nowhere the ghost can go...you monster");
+                return;
+            }
             #region old 
             //IntPtr[] windows = GetAllWindows();
             //Process[] allProcesses = Process.GetProcesses();
@@ -508,7 +569,8 @@ namespace WinFormsHalloweenProject
                     var handleText = GetText(windowHandles[i]);
                     int width = temp.Right - temp.Left;
                     int height = temp.Bottom - temp.Top;
-                    if ((handleText != "Cortana" && handleText != "" && handleText != "Mail" && handleText != "Alienware Command Center" && handleText != "Settings" && handleText != "Calculator" && (width >= minWindowWidth | height >= minWindowHeight) & (width <= maxWindowWidth | height <= maxWindowHeight) & (temp.Left < Screen.PrimaryScreen.Bounds.Right & temp.Top < Screen.PrimaryScreen.Bounds.Bottom & temp.Right > Screen.PrimaryScreen.Bounds.Left & temp.Bottom > Screen.PrimaryScreen.Bounds.Top)) && !CurrentWindows.Contains(temp))
+                    if ((handleText != "Cortana" && handleText != "" && handleText != "Mail" && handleText != "Alienware Command Center" && handleText != "Settings" && handleText != "Calculator" && 
+                        (width >= minWindowWidth | height >= minWindowHeight) & (width <= maxWindowWidth | height <= maxWindowHeight) & (temp.Left < Screen.PrimaryScreen.Bounds.Right & temp.Top < Screen.PrimaryScreen.Bounds.Bottom & temp.Right > Screen.PrimaryScreen.Bounds.Left & temp.Bottom > Screen.PrimaryScreen.Bounds.Top)) && !CurrentWindows.Contains(temp))
                     {
                         CurrentWindows.Add(temp);
                     }
@@ -539,71 +601,7 @@ namespace WinFormsHalloweenProject
          const float wantedSpeed = 5;
         private void Movement_Tick(object sender, EventArgs e)
         {
-            TrueBounds = (FloatTangle)TrueBounds.Lerp(wantedBounds, .1f);
-            if (GetPath(false, ref pathResult, out var spaces))
-            {
-                start = false;
-                Console.WriteLine("new path");
-                vibing = false;
-                pathIndex = -1;
-                globalLerpFactor = 0.001f;
-                currentDistance = 0;
-                totalDistance = 0;
-
-                if (pathResult == PathStatus.NoPath) return;
-
-                var prevLocation = trueLocation;
-                RECT evilRect = endGoal.ToRECT();
-                if (pathResult == PathStatus.GhostInWall)
-                {
-                    // evilRect = new RECT(Math.Min(endGoal.Left, evilRect.Left), Math.Min(endGoal.Top, evilRect.Top), Math.Max(endGoal.Right, evilRect.Right), Math.Max(endGoal.Bottom, evilRect.Bottom));
-
-                    //var newBounds = Declamp(TrueBounds, evilRect.Left, evilRect.Right, evilRect.Top, evilRect.Bottom);
-                    var newBounds = wantedBounds.GetClosestBounds(graph.AspectRatio, spaces);
-                    wantedBounds = newBounds;
-                    #region Mikah IDK
-                    if (wantedBounds.Equals(newBounds))
-                    {
-                        //T OD O RO L IS T:
-                        //make it so the ghost doesn't stop on each step of the path. 
-                        //make a min ghost size.
-                        //check if the ghost is sometimes missing paths because they are too small.
-                        //check scaling to see if the black line still appears and if it does stop scaling the whole winform.
-                        //make the wandering function work.
-                        //test(especially the startup hooks).
-                        //deploy.
-                        //party.
-                        //work on the attendance automizer.
-                    }
-                    #endregion
-                    trueLocation = wantedBounds.GetCenter();
-
-                    CurrentPath = graph.GetPath(CurrentWindows, trueLocation.ToPoint(), out pathResult, out endGoal, out spaces);
-                }
-                if (pathResult == PathStatus.NoPath)
-                {
-                    Console.WriteLine("Walked into a wall :(");
-                    return;
-                }
-
-                distances = new float[CurrentPath.Length - 1];
-                var oldPoint = CurrentPath[0];
-                for (int i = 1; i < CurrentPath.Length; i++)
-                {
-                    totalDistance += distances[i - 1] = (float)oldPoint.Distance(CurrentPath[i]);
-                    oldPoint = CurrentPath[i];
-                }
-                targetDistance = 0;
-                lastLerpPoint = trueLocation;
-            }
-            else if (pathResult == PathStatus.NoPath)
-            {
-                Console.WriteLine("Nowhere the ghost can go...you monster");
-                return;
-            }
-
-
-
+            TrueBounds = (FloatTangle)TrueBounds.Lerp(wantedBounds, .1f);            
             MovementVector = oldLocation - (Size)Location;
             oldLocation = (Size)Location;
 
