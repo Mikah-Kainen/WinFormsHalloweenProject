@@ -111,7 +111,7 @@ namespace WinFormsHalloweenProject
 
 
 
-
+        #region EddenIDK
         /// <summary>
         ///     Copies the text of the specified window's title bar (if it has one) into a buffer. If the specified window is a
         ///     control, the text of the control is copied. However, GetWindowText cannot retrieve the text of a control in another
@@ -154,6 +154,7 @@ namespace WinFormsHalloweenProject
         ///     </see>
         /// </remarks>
         /// 
+        #endregion
 
         [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
         static extern int GetWindowTextLength(IntPtr hWnd);
@@ -170,6 +171,7 @@ namespace WinFormsHalloweenProject
             return sb.ToString();
         }
 
+        #region AncientHistory
         /// <summary>
         /// ///////////////////////////////////////////NEED TO MAKE A MAP FOR GHOST NAVIGATION!! GOOD lUCK FUTURE SELF
         /// First identify the open spaces on the graph
@@ -177,6 +179,51 @@ namespace WinFormsHalloweenProject
         /// A* there with the A* returning a pixel by pixel path including the path width and the ghost calculating how much it can shake each step of the way
         /// Maybe a rectangle by rectangle path?
         /// </summary>
+        #endregion
+
+        #region AwesomePlanning
+        //for help look at:
+        //https://learn.microsoft.com/en-us/windows/win32/api/shellapi/nf-shellapi-shappbarmessage?redirectedfrom=MSDN
+        //https://www.pcreview.co.uk/threads/taskbar-height-and-location.3387688/
+        #endregion
+        [DllImport("SHELL32", CallingConvention = CallingConvention.StdCall)]
+        static extern uint SHAppBarMessage(int dwMessage, ref APPBARDATA pData);
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct APPBARDATA
+        {
+            public int cbSize;
+            public IntPtr hWnd;
+            public int uCallbackMessage;
+            public int uEdge;
+            public RECT rc;
+            public IntPtr lParam;
+        }
+
+        enum AppBarMessages
+        {
+            ABM_NEW = 0,
+            ABM_REMOVE = 1,
+            ABM_QUERYPOS = 2,
+            ABM_SETPOS = 3,
+            ABM_GETSTATE = 4,
+            ABM_GETTASKBARPOS = 5,
+            ABM_ACTIVATE = 6,
+            ABM_GETAUTOHIDEBAR = 7,
+            ABM_SETAUTOHIDEBAR = 8,
+            ABM_WINDOWPOSCHANGED = 9,
+            ABM_SETSTATE = 10,
+            ABM_GETAUTOHIDEBAREX = 11,
+            ABM_SETAUTOHIDEBAREX = 12,
+        }
+
+        enum TaskBarEdge
+        {
+            Bottom,
+            Top,
+            Left,
+            Right,
+        }
         #endregion
 
 
