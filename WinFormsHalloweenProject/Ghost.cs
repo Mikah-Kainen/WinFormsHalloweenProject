@@ -76,6 +76,55 @@ namespace WinFormsHalloweenProject
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool IsWindowVisible(IntPtr hwnd);
 
+        [DllImport("dwmapi.dll")]
+        static extern uint DwmGetWindowAttribute(IntPtr hwnd, DWMWINDOWATTRIBUTE dwAttribute, out bool pvAttribute, int cbAttribute);
+
+        enum DWMWINDOWATTRIBUTE
+        {
+            DWMWA_NCRENDERING_ENABLED,
+            DWMWA_NCRENDERING_POLICY,
+            DWMWA_TRANSITIONS_FORCEDISABLED,
+            DWMWA_ALLOW_NCPAINT,
+            DWMWA_CAPTION_BUTTON_BOUNDS,
+            DWMWA_NONCLIENT_RTL_LAYOUT,
+            DWMWA_FORCE_ICONIC_REPRESENTATION,
+            DWMWA_FLIP3D_POLICY,
+            DWMWA_EXTENDED_FRAME_BOUNDS,
+            DWMWA_HAS_ICONIC_BITMAP,
+            DWMWA_DISALLOW_PEEK,
+            DWMWA_EXCLUDED_FROM_PEEK,
+            DWMWA_CLOAK,
+            DWMWA_CLOAKED,
+            DWMWA_FREEZE_REPRESENTATION,
+            DWMWA_PASSIVE_UPDATE_MODE,
+            DWMWA_USE_HOSTBACKDROPBRUSH,
+            DWMWA_USE_IMMERSIVE_DARK_MODE = 20,
+            DWMWA_WINDOW_CORNER_PREFERENCE = 33,
+            DWMWA_BORDER_COLOR,
+            DWMWA_CAPTION_COLOR,
+            DWMWA_TEXT_COLOR,
+            DWMWA_VISIBLE_FRAME_BORDER_THICKNESS,
+            DWMWA_SYSTEMBACKDROP_TYPE,
+            DWMWA_LAST
+        }
+
+        bool IsWindowCloaked(IntPtr windowHandle)
+        {
+            bool isCloaked;
+            uint result = DwmGetWindowAttribute(windowHandle, DWMWINDOWATTRIBUTE.DWMWA_CLOAKED, out isCloaked, sizeof(bool));
+            bool didFail = result >> 31 == 1;
+
+            return isCloaked && !didFail;
+            //for more information visit:
+            //https://learn.microsoft.com/en-us/windows/win32/api/dwmapi/ne-dwmapi-dwmwindowattribute
+        }
+
+        bool IsWindowVisibleOnScreen(IntPtr windowHandle)
+        {
+            return IsWindowVisible(windowHandle) &&
+                   !IsWindowCloaked(windowHandle);
+        }
+
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -216,7 +265,7 @@ namespace WinFormsHalloweenProject
             ABM_SETAUTOHIDEBAREX = 12,
         }
 
-        enum TaskBarEdge
+        enum AppBarEdge
         {
             Bottom = 0,
             Top = 1,
@@ -224,16 +273,28 @@ namespace WinFormsHalloweenProject
             Right = 3,
         }
 
-        public RECT GetTaskBarBounds()
+        enum AppBarState : int
         {
-            APPBARDATA taskBarData = new APPBARDATA();
+            ABS_MANUAL = 0,
+            ABS_AUTOHIDE = 1,
+            ABS_ALWAYSONTOP = 2,
+            ABS_AUTOHIDEANDONTOP = 3,
+        }
 
-            var useless = SHAppBarMessage((int)AppBarMessages.ABM_GETTASKBARPOS, ref taskBarData);
-            if(!IsWindowVisible(taskBarData.hWnd))
+        public RECT GetTaskBarBounds()
+            //Gets the TaskBar bounds if the task bar is not on auto-hide. If the task bar is on auto-hide will return (0, 0, 0, 0). Does not return task bar size if the task bar is visible in auto-hide mode
+        {
+            APPBARDATA appBarData = new APPBARDATA();
+            var useless = SHAppBarMessage((int)AppBarMessages.ABM_GETTASKBARPOS, ref appBarData);
+            RECT returnRECT = appBarData.rc;
+
+            //IntPtr appBarHandle = (IntPtr)SHAppBarMessage((int)AppBarMessages.ABM_GETAUTOHIDEBAR, ref appBarData);
+            uint currentState = SHAppBarMessage((int)AppBarMessages.ABM_GETSTATE, ref appBarData);
+            if (currentState == (uint)AppBarState.ABS_AUTOHIDE)
             {
                 return new RECT(0, 0, 0, 0);
             }
-            return taskBarData.rc;
+            return returnRECT;
         }
         #endregion
 
@@ -280,7 +341,7 @@ namespace WinFormsHalloweenProject
             get => new FloatTangle(new Vector2(BackingBounds.X + leftOffset * scale.X, BackingBounds.Y + topOffset * scale.Y), new Vector2(BackingBounds.Width - leftOffset * scale.X - rightOffset * scale.X, BackingBounds.Height - topOffset * scale.Y - bottomOffset * scale.Y));
             set
             {
-              //  var origScale = scale;
+                //  var origScale = scale;
                 scale = new Vector2(value.Width / startingBounds.X, value.Height / startingBounds.Y);
                 BackingBounds = new FloatTangle(new Vector2(value.X - leftOffset * scale.X, value.Y - topOffset * scale.Y), new Vector2(value.Width + leftOffset * scale.X + rightOffset * scale.X, value.Height + topOffset * scale.Y + bottomOffset * scale.Y));
             }
@@ -350,7 +411,6 @@ namespace WinFormsHalloweenProject
         public readonly Dictionary<Tintmap, (Bitmap template, LinkedList<Bitmap> maps)> particleCache = new Dictionary<Tintmap, (Bitmap, LinkedList<Bitmap>)>();
         private void Ghost_Load(object sender, EventArgs e)
         {
-            var result = GetTaskBarBounds();
             //ParticlePool.Instance.Populate(8, () => new Particle());
             for (int i = 0; i++ < particleCount;)
             {
@@ -555,7 +615,7 @@ namespace WinFormsHalloweenProject
                 }
                 if (isGhost) continue;
 
-                if (IsWindowVisible(windowHandles[i]))
+                if (IsWindowVisibleOnScreen(windowHandles[i]))
                 {
                     RECT temp;
                     GetWindowRect(new HandleRef(IntPtr.Zero, windowHandles[i]), out temp);
@@ -563,7 +623,7 @@ namespace WinFormsHalloweenProject
                     var handleText = GetText(windowHandles[i]);
                     int width = temp.Right - temp.Left;
                     int height = temp.Bottom - temp.Top;
-                    if ((handleText != "Cortana" && handleText != "" && handleText != "Mail" && handleText != "Alienware Command Center" && handleText != "Settings" && handleText != "Calculator" && (width >= minWindowWidth | height >= minWindowHeight) & (width <= maxWindowWidth | height <= maxWindowHeight) & (temp.Left < Screen.PrimaryScreen.Bounds.Right & temp.Top < Screen.PrimaryScreen.Bounds.Bottom & temp.Right > Screen.PrimaryScreen.Bounds.Left & temp.Bottom > Screen.PrimaryScreen.Bounds.Top)) && !CurrentWindows.Contains(temp))
+                    if ((/*handleText != "Cortana" && handleText != "" && handleText != "Mail" && handleText != "Alienware Command Center" && handleText != "Settings" && handleText != "Calculator" && */(width >= minWindowWidth | height >= minWindowHeight) & (width <= maxWindowWidth | height <= maxWindowHeight) & (temp.Left < Screen.PrimaryScreen.Bounds.Right & temp.Top < Screen.PrimaryScreen.Bounds.Bottom & temp.Right > Screen.PrimaryScreen.Bounds.Left & temp.Bottom > Screen.PrimaryScreen.Bounds.Top)) && !CurrentWindows.Contains(temp))
                     {
                         CurrentWindows.Add(temp);
                     }
@@ -594,6 +654,8 @@ namespace WinFormsHalloweenProject
         // const double wantedSpeed = 5;
         private void Movement_Tick(object sender, EventArgs e)
         {
+            var result = GetTaskBarBounds();
+
             TrueBounds = (FloatTangle)TrueBounds.Lerp(wantedBounds, .1f);
             if (GetPath(false, ref pathResult, out var spaces))
             {
@@ -678,7 +740,7 @@ namespace WinFormsHalloweenProject
                 //TrueBounds = Wander();
                 wantedBounds = wantedBounds.GetLargestBounds(trueLocation, startingBounds, CurrentWindows, Screen.PrimaryScreen.Bounds);
                 //    Location = new Point(trueLocation.X - TrueBounds.Width / 2 + rand.Next(-5, 5), trueLocation.Y - TrueBounds.Width / 2 + +rand.Next(-5, 5));
-             //   TrueBounds = TrueBounds.GetBiggestRECT(startingBounds, CurrentWindows);
+                //   TrueBounds = TrueBounds.GetBiggestRECT(startingBounds, CurrentWindows);
                 return;
             }
             Console.WriteLine("Not vibing :(");
@@ -734,7 +796,7 @@ namespace WinFormsHalloweenProject
             FloatTangle tentativeRectangle = new FloatTangle(TrueBounds.Left + deltaX, TrueBounds.Top + deltaY, TrueBounds.Right + deltaX, TrueBounds.Bottom + deltaY);
             bool switchXDirection = false;
             bool switchYDirection = false;
-            
+
             foreach (RECT window in CurrentWindows)
             {
                 if (window.Intersects(tentativeRectangle))
