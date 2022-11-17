@@ -110,7 +110,6 @@ namespace WinFormsHalloweenProject
         }
 
 
-
         #region EddenIDK
         /// <summary>
         ///     Copies the text of the specified window's title bar (if it has one) into a buffer. If the specified window is a
@@ -219,10 +218,22 @@ namespace WinFormsHalloweenProject
 
         enum TaskBarEdge
         {
-            Bottom,
-            Top,
-            Left,
-            Right,
+            Bottom = 0,
+            Top = 1,
+            Left = 2,
+            Right = 3,
+        }
+
+        public RECT GetTaskBarBounds()
+        {
+            APPBARDATA taskBarData = new APPBARDATA();
+
+            var useless = SHAppBarMessage((int)AppBarMessages.ABM_GETTASKBARPOS, ref taskBarData);
+            if(!IsWindowVisible(taskBarData.hWnd))
+            {
+                return new RECT(0, 0, 0, 0);
+            }
+            return taskBarData.rc;
         }
         #endregion
 
@@ -339,6 +350,7 @@ namespace WinFormsHalloweenProject
         public readonly Dictionary<Tintmap, (Bitmap template, LinkedList<Bitmap> maps)> particleCache = new Dictionary<Tintmap, (Bitmap, LinkedList<Bitmap>)>();
         private void Ghost_Load(object sender, EventArgs e)
         {
+            var result = GetTaskBarBounds();
             //ParticlePool.Instance.Populate(8, () => new Particle());
             for (int i = 0; i++ < particleCount;)
             {
