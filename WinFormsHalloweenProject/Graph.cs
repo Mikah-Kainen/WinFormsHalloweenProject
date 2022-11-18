@@ -24,9 +24,9 @@ namespace WinFormsHalloweenProject
 
     public partial class Graph
     {
-        public static double DistanceFunc(Point start, Point end)
+        public double DistanceFunc(Point start, Point end)
         {
-            return Math.Sqrt(0 *( (end.X - start.X) * (end.X - start.X) + (end.Y - start.Y) * (end.Y - start.Y)));
+            return Math.Sqrt((end.X - start.X) * (end.X - start.X) + (end.Y - start.Y) * (end.Y - start.Y));
         }
 
         private List<Node> Nodes = new List<Node>();
