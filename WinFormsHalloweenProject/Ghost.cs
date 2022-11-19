@@ -112,9 +112,14 @@ namespace WinFormsHalloweenProject
         {
             bool isCloaked;
             uint result = DwmGetWindowAttribute(windowHandle, DWMWINDOWATTRIBUTE.DWMWA_CLOAKED, out isCloaked, sizeof(bool));
-            bool didFail = result >> 31 == 1;
+            bool didSucceed = result >> 31 == 0;
 
-            return isCloaked && !didFail;
+            bool realResult = isCloaked & didSucceed;
+            if (realResult == true)
+            {
+
+            }
+            return isCloaked & didSucceed;
             //for more information visit:
             //https://learn.microsoft.com/en-us/windows/win32/api/dwmapi/ne-dwmapi-dwmwindowattribute
         }
