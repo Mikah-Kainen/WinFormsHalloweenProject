@@ -282,7 +282,7 @@ namespace WinFormsHalloweenProject
         }
 
         public RECT GetTaskBarBounds()
-            //Gets the TaskBar bounds if the task bar is not on auto-hide. If the task bar is on auto-hide will return (0, 0, 0, 0). Does not return task bar size if the task bar is visible in auto-hide mode
+        //Gets the TaskBar bounds if the task bar is not on auto-hide. If the task bar is on auto-hide will return (0, 0, 0, 0). Does not return task bar size if the task bar is visible in auto-hide mode
         {
             APPBARDATA appBarData = new APPBARDATA();
             var useless = SHAppBarMessage((int)AppBarMessages.ABM_GETTASKBARPOS, ref appBarData);
@@ -349,6 +349,9 @@ namespace WinFormsHalloweenProject
             }
         }
 
+        public int TotalTime { get; internal set; }
+        public const int ParticleTimingCeiling = 17 * 3;
+
         const int minWindowWidth = 1;
         const int minWindowHeight = 1;
 
@@ -363,7 +366,7 @@ namespace WinFormsHalloweenProject
         float currentDistance = 0;
         float targetDistance = 0;
         float globalLerpFactor = 0;
-        float lerpFactor = 0;
+        // float lerpFactor = 0;
         bool vibing = false;
         PathStatus pathResult = PathStatus.Path;
         Rectangle endGoal;
@@ -382,10 +385,12 @@ namespace WinFormsHalloweenProject
         public bool SpawnParticles = true;
         const int particleCount = 8;
         int spawnDelay = 0;
-        public Particle[] Particles = new Particle[particleCount];
+        public List<Particle> Particles = new List<Particle>(particleCount);
 
+        int lastParticleInited = 0;
         int particleIndex = 0;
         bool particlesKnow = false;
+        
 
 #nullable disable
         public Ghost()
@@ -456,17 +461,25 @@ namespace WinFormsHalloweenProject
         void CreateParticle()
         {
             //return;
+            int diff = spawnDelay;
             Thread.Sleep(spawnDelay += 175);
-
-            Particle particle = new Particle();
-            Particles[particleIndex++] = particle;
+            var ind = particleIndex++;
+            Particle particle = new Particle(diff, ind, this);
+            Particles.Add(particle);
             SetParticle(particle);
-            Console.WriteLine(particleIndex - 1);
+            Console.WriteLine(ind);
 
-
-            //particle.Show();
             Application.Run(particle);
 
+            //particle.Show();
+            //try
+            //{
+
+            //}
+            //catch
+            //{
+            //    Console.WriteLine($"Particle {ind}: completely failed!");
+            //}
 
 
             //ParticlePool.Instance.Borrow<Particle>(). ;
@@ -483,71 +496,78 @@ namespace WinFormsHalloweenProject
             //}
         }
 
+        void InitParticle(Particle particle)
+        {
+            while (lastParticleInited != particle.ID) ;
+            SetParticle(particle);
+            lastParticleInited++;
+        }
         public void SetParticle(Particle particle)
         {
-
             
-            try
-            {
-                Tintmap particleKey = (particlesTextures.RandomValue(), tints.RandomValue());
-                Color chosenTint = particleKey.Item2;
-                if (!particleCache.TryGetValue(particleKey, out var particleTexture))
-                {
-                    particleCache[particleKey] = new(particleKey.Item1, new LinkedList<Bitmap>());
-                    particleTexture.template = (Bitmap)particleKey.Item1.Clone();
 
-                    Graphics gfx = Graphics.FromImage(particleTexture.template);
-                    float[][] colorMatrixElements = {
+            //try
+            //{
+            Tintmap particleKey = (particlesTextures.RandomValue(), tints.RandomValue());
+            Color chosenTint = particleKey.Item2;
+            if (!particleCache.TryGetValue(particleKey, out var particleTexture))
+            {
+                particleCache[particleKey] = new(particleKey.Item1, new LinkedList<Bitmap>());
+                particleTexture.template = (Bitmap)particleKey.Item1.Clone();
+
+                Graphics gfx = Graphics.FromImage(particleTexture.template);
+                float[][] colorMatrixElements = {
                     new float[] {chosenTint.R / 255f * 2,  0,  0,  0,  0},        // red scaling factor
                     new float[] {0, chosenTint.G / 255f * 2,  0,  0,  0},        // green scaling factor
                     new float[] {0,  0, chosenTint.B / 255f * 2,  0,  0},        // blue scaling factor
                     new float[] {0,  0,  0,  1,  0},
                     new float[] {0,  0,  0,  0,  1}};
-                    //TODO: learn how colormatrixes work -Edden
-                    ColorMatrix matrix = new ColorMatrix(colorMatrixElements);
-                    ImageAttributes attributes = new ImageAttributes();
-                    attributes.SetColorMatrix(matrix, ColorMatrixFlag.Default, ColorAdjustType.Bitmap);
-                    var bounds = new Rectangle(Point.Empty, particleTexture.template.Size);
-                    gfx.DrawImage(particleTexture.template, bounds, bounds.X, bounds.Y, bounds.Width, bounds.Height, GraphicsUnit.Pixel, attributes);
-                    particleTexture.maps = new LinkedList<Bitmap>();
-                    particleTexture.maps.AddFirst((Bitmap)particleTexture.template.Clone());
-                    particleCache[particleKey] = particleTexture;
+                //TODO: learn how colormatrixes work -Edden
+                ColorMatrix matrix = new ColorMatrix(colorMatrixElements);
+                ImageAttributes attributes = new ImageAttributes();
+                attributes.SetColorMatrix(matrix, ColorMatrixFlag.Default, ColorAdjustType.Bitmap);
+                var bounds = new Rectangle(Point.Empty, particleTexture.template.Size);
+                gfx.DrawImage(particleTexture.template, bounds, bounds.X, bounds.Y, bounds.Width, bounds.Height, GraphicsUnit.Pixel, attributes);
+                particleTexture.maps = new LinkedList<Bitmap>();
+                particleTexture.maps.AddFirst((Bitmap)particleTexture.template.Clone());
+                particleCache[particleKey] = particleTexture;
 
-                }
-                if (particleTexture.maps.Count == 0)
-                {
-                    particleTexture.maps.AddFirst((Bitmap)particleTexture.template.Clone());
-                }
-                try
-                {
-                    var chosenTexture = particleTexture.maps.First.Value;
-                    particleTexture.maps.RemoveFirst();
-
-                    var currScale = particleScale * scale.X;
-                    particle.SetData(particleKey, chosenTexture, this, 500, 500, new Point(Bounds.X + Bounds.Width / 2 - (int)(chosenTexture.Width * currScale / 2), Bounds.Bottom - (int)(chosenTexture.Height * currScale)), MovementVector + new Size(rand.Next(0, 2), rand.Next(0, 2)), (float)currScale);
-
-                }
-                catch (NullReferenceException)
-                {
-                    Console.WriteLine("Magic null!!");
-                    for (var map = particleTexture.maps.First; map != null; map = map.Next)
-                    {
-                        map.Value = (Bitmap)map.Value.Clone();
-                    }
-                }
             }
-            catch (Exception blah) when (blah is InvalidOperationException || blah is OutOfMemoryException)
+            if (particleTexture.maps.Count == 0)
             {
-                Console.WriteLine($"{blah}\nMultiple particles accessing cache at once {DateTime.Now}");
-                particle.SetData(new Point(Bounds.X + Bounds.Width / 2), MovementVector);
-                return;
+                particleTexture.maps.AddFirst((Bitmap)particleTexture.template.Clone());
             }
+            //try
+            //{
+            var chosenTexture = particleTexture.maps.First.Value;
+            particleTexture.maps.RemoveFirst();
+
+            var currScale = particleScale * scale.X;
+            particle.SetData(particleKey, chosenTexture, 500, 500, MovementVector + new Size(rand.Next(-1, 2), rand.Next(-1, 2)), (float)currScale);
+
+            //}
+            //catch (NullReferenceException)
+            //{
+            //    Console.WriteLine("Magic null!!");
+            //    for (var map = particleTexture.maps.First; map != null; map = map.Next)
+            //    {
+            //        map.Value = (Bitmap)map.Value.Clone();
+            //    }
+            //}
+            //}
+            //catch (Exception blah) when (blah is InvalidOperationException || blah is OutOfMemoryException)
+            //{
+            //    Console.WriteLine($"{blah}\nMultiple particles accessing cache at once {DateTime.Now}");
+            //    particle.SetData(new Point(Bounds.X + Bounds.Width / 2), MovementVector);
+            //    return;
+            //}
         }
 
 
         private void Animation_Tick(object sender, EventArgs e)
         {
-            if (GetPath(false, ref pathResult, out var spaces))
+#nullable disable
+            if (GetPath(start, ref pathResult, out var spaces))
             {
                 start = false;
                 Console.WriteLine("new path");
@@ -557,10 +577,8 @@ namespace WinFormsHalloweenProject
                 currentDistance = 0;
                 totalDistance = 0;
 
-                if (pathResult == PathStatus.NoPath) return;
-
-                var prevLocation = trueLocation;
-                RECT evilRect = endGoal.ToRECT();
+                // var prevLocation = trueLocation;
+                // RECT evilRect = endGoal.ToRECT();
                 if (pathResult == PathStatus.GhostInWall)
                 {
                     // evilRect = new RECT(Math.Min(endGoal.Left, evilRect.Left), Math.Min(endGoal.Top, evilRect.Top), Math.Max(endGoal.Right, evilRect.Right), Math.Max(endGoal.Bottom, evilRect.Bottom));
@@ -608,6 +626,8 @@ namespace WinFormsHalloweenProject
                 Console.WriteLine("Nowhere the ghost can go...you monster");
                 return;
             }
+#nullable enable
+
             #region old 
             //IntPtr[] windows = GetAllWindows();
             //Process[] allProcesses = Process.GetProcesses();
@@ -707,6 +727,7 @@ namespace WinFormsHalloweenProject
                     break;
                 }
             }
+#nullable disable
             if (diff | PreviousWindows.Count > 0)
             {
                 CurrentPath = graph.GetPath(CurrentWindows, trueLocation.ToPoint(), out pathResult, out endGoal, out spaces);
@@ -716,76 +737,22 @@ namespace WinFormsHalloweenProject
             return false;
         }
 
-         const float wantedSpeed = 5;
+        const float wantedSpeed = 5;
         private void Movement_Tick(object sender, EventArgs e)
         {
+            foreach (var particle in Particles)
+            {
+                if (particle.Setting)
+                {
+                    SetParticle(particle);
+                }
+            }
+
+
+            TotalTime += Movement.Interval;
             var result = GetTaskBarBounds();
 
             TrueBounds = (FloatTangle)TrueBounds.Lerp(wantedBounds, .1f);
-            if (GetPath(false, ref pathResult, out var spaces))
-            {
-                start = false;
-                Console.WriteLine("new path");
-                vibing = false;
-                pathIndex = -1;
-                globalLerpFactor = 0.001f;
-                currentDistance = 0;
-                totalDistance = 0;
-
-                if (pathResult == PathStatus.NoPath) return;
-
-                var prevLocation = trueLocation;
-                RECT evilRect = endGoal.ToRECT();
-                if (pathResult == PathStatus.GhostInWall)
-                {
-                    // evilRect = new RECT(Math.Min(endGoal.Left, evilRect.Left), Math.Min(endGoal.Top, evilRect.Top), Math.Max(endGoal.Right, evilRect.Right), Math.Max(endGoal.Bottom, evilRect.Bottom));
-
-                    //var newBounds = Declamp(TrueBounds, evilRect.Left, evilRect.Right, evilRect.Top, evilRect.Bottom);
-                    var newBounds = wantedBounds.GetClosestBounds(graph.AspectRatio, spaces);
-                    wantedBounds = newBounds;
-                    #region Mikah IDK
-                    if (wantedBounds.Equals(newBounds))
-                    {
-                        //T OD O RO L IS T:
-                        //make it so the ghost doesn't stop on each step of the path. 
-                        //make a min ghost size.
-                        //check if the ghost is sometimes missing paths because they are too small.
-                        //check scaling to see if the black line still appears and if it does stop scaling the whole winform.
-                        //make the wandering function work.
-                        //test(especially the startup hooks).
-                        //deploy.
-                        //party.
-                        //work on the attendance automizer.
-                    }
-                    #endregion
-                    trueLocation = wantedBounds.GetCenter();
-
-                    CurrentPath = graph.GetPath(CurrentWindows, trueLocation.ToPoint(), out pathResult, out endGoal, out spaces);
-                }
-                if (pathResult == PathStatus.NoPath)
-                {
-                    Console.WriteLine("Walked into a wall :(");
-                    return;
-                }
-
-                distances = new float[CurrentPath.Length - 1];
-                var oldPoint = CurrentPath[0];
-                for (int i = 1; i < CurrentPath.Length; i++)
-                {
-                    totalDistance += distances[i - 1] = (float)oldPoint.Distance(CurrentPath[i]);
-                    oldPoint = CurrentPath[i];
-                }
-                targetDistance = 0;
-                lastLerpPoint = trueLocation;
-            }
-            else if (pathResult == PathStatus.NoPath)
-            {
-                Console.WriteLine("Nowhere the ghost can go...you monster");
-                return;
-            }
-
-
-
             MovementVector = oldLocation - (Size)Location;
             oldLocation = (Size)Location;
 
@@ -799,18 +766,18 @@ namespace WinFormsHalloweenProject
             //    ;
             //}
 
-            if (vibing = vibing || endGoal.GetCenter().Distance(trueLocation.ToPoint()) < endGoal.Width / 10)
+            if (vibing = vibing || endGoal.GetCenter().Distance(trueLocation.ToPoint()) <= 1)
             {
-                Console.WriteLine("vibing");
+                // Console.WriteLine("vibing");
                 //vibe
                 Wander();
-               // TrueBounds = wantedBounds = wantedBounds.GetLargestBounds(trueLocation, startingBounds, CurrentWindows, Screen.PrimaryScreen.Bounds);
+                // TrueBounds = wantedBounds = wantedBounds.GetLargestBounds(trueLocation, startingBounds, CurrentWindows, Screen.PrimaryScreen.Bounds);
 
                 //    Location = new Point(trueLocation.X - TrueBounds.Width / 2 + rand.Next(-5, 5), trueLocation.Y - TrueBounds.Width / 2 + +rand.Next(-5, 5));
                 //   TrueBounds = TrueBounds.GetBiggestRECT(startingBounds, CurrentWindows);
                 return;
             }
-            Console.WriteLine("Not vibing :(");
+            //   Console.WriteLine("Not vibing :(");
             #region the worst lerp
             //Console.WriteLine(vibing);
             //Console.WriteLine("i" + pathIndex);
@@ -847,7 +814,7 @@ namespace WinFormsHalloweenProject
 
                 var oldLocation = trueLocation;
                 trueLocation = lastLerpPoint.Lerp(CurrentPath[pathIndex + 1].ToVector2(), (currentDistance - (targetDistance - distances[pathIndex])) / distances[pathIndex]);
-                
+
 
                 // TrueBounds = new FloatTangle(trueLocation.X - TrueBounds.Width / 2, trueLocation.Y - TrueBounds.Width / 2, TrueBounds.Width, TrueBounds.Height);
                 var old = wantedBounds = wantedBounds.GetLargestBounds(trueLocation, oldLocation, startingBounds, CurrentWindows, Screen.PrimaryScreen.Bounds); //TrueBounds.GetBiggestRECT(startingBounds, CurrentWindows);
@@ -860,9 +827,9 @@ namespace WinFormsHalloweenProject
 
         private void Wander()
         {
-           // Console.WriteLine($"Bounds are {Bounds}, backing are {BackingBounds}, true are {TrueBounds}, wanted are {wantedBounds}, location is {trueLocation}");
+            // Console.WriteLine($"Bounds are {Bounds}, backing are {BackingBounds}, true are {TrueBounds}, wanted are {wantedBounds}, location is {trueLocation}");
 
-            
+
             foreach (var window in CurrentWindows)
             {
                 if (window.Intersects(wantedBounds))
