@@ -323,7 +323,7 @@ namespace WinFormsHalloweenProject
 
         const int leftOffset = 10;
         const int rightOffset = 7;
-        const int topOffset = 65;
+        const int topOffset = 10;
         const int bottomOffset = 7;
 
         Vector2 startingBounds;
