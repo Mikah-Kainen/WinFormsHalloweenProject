@@ -1,5 +1,7 @@
 ﻿using System.Numerics;
 using System.Runtime.CompilerServices;
+using WinformsHalloweenProject.RectangleStuff;
+
 namespace WinformsHalloweenProject.Extensions
 {
     using static WinFormsHalloweenProject.Ghost;

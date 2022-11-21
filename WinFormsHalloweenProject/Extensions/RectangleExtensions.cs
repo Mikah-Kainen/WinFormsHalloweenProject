@@ -1,5 +1,5 @@
 ﻿using System.Numerics;
-using WinformsHalloweenProject;
+using WinformsHalloweenProject.RectangleStuff;
 
 namespace WinformsHalloweenProject.Extensions
 {

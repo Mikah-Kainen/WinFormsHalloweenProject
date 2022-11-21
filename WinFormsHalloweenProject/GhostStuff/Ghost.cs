@@ -11,6 +11,7 @@ using System.Text;
 using System.Numerics;
 using System.Drawing;
 using WinformsHalloweenProject.Extensions;
+using WinformsHalloweenProject.RectangleStuff;
 
 namespace WinFormsHalloweenProject
 {

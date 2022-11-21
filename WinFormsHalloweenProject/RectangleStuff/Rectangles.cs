@@ -7,10 +7,10 @@ using System.Threading.Tasks;
 
 using static WinFormsHalloweenProject.Ghost;
 
-namespace WinformsHalloweenProject
+namespace WinformsHalloweenProject.RectangleStuff
 {
     #region EddenIDK
-    using TotallyNotaFloatISwear = System.Single;
+    using TotallyNotaFloatISwear = Single;
     #endregion
     public interface IRectangle
     {
@@ -73,7 +73,7 @@ namespace WinformsHalloweenProject
 
         public float Height { get; set; }
 
-        public float Left { get => X; set { Width += X - value; X = value; } }        
+        public float Left { get => X; set { Width += X - value; X = value; } }
         public float Right { get => X + Width; set => Width = value - X; }
 
         public float Top { get => Y; set { Height += Y - value; Y = value; } }

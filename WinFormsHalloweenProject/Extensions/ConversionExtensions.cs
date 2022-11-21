@@ -5,8 +5,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
-
-using WinformsHalloweenProject;
+using WinformsHalloweenProject.RectangleStuff;
 
 namespace WinformsHalloweenProject.Extensions
 {

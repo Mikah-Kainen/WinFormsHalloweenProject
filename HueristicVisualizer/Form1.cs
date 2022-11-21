@@ -8,7 +8,7 @@ using WinFormsHalloweenProject;
 
 namespace Rectangle_Hueristic
 {
-    using static WinFormsHalloweenProject.Pain;
+    using static WinformsHalloweenProject.RectangleStuff.Pain;
 
     //using RECT = Rectangle;
     using RECT = WinFormsHalloweenProject.Ghost.RECT;
