@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.Text;
 using System.Numerics;
 using System.Drawing;
+using WinformsHalloweenProject.Extensions;
 
 namespace WinFormsHalloweenProject
 {
