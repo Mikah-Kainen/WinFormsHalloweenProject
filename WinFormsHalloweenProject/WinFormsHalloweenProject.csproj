@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Update="Particle.Designer.cs">
+    <Compile Update="ParticleStuff\Particle.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>Particle.resx</DependentUpon>
@@ -23,10 +23,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Update="Ghost.resx">
+    <EmbeddedResource Update="GhostStuff\Ghost.resx">
       <Generator></Generator>
     </EmbeddedResource>
-    <EmbeddedResource Update="Particle.resx">
+    <EmbeddedResource Update="ParticleStuff\Particle.resx">
       <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>Particle.Designer.cs</LastGenOutput>
     </EmbeddedResource>

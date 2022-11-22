@@ -322,11 +322,8 @@ namespace WinFormsHalloweenProject
         Size oldLocation;
         public Size MovementVector;
 
-        const int leftOffset = 10;
-        const int rightOffset = 7;
-        const int topOffset = 10;
-        const int bottomOffset = 7;
 
+        #region BoundsStuff
         Vector2 startingBounds;
         Vector2 scale = Vector2.One;
 
@@ -350,9 +347,15 @@ namespace WinFormsHalloweenProject
                 BackingBounds = new FloatTangle(new Vector2(value.X - leftOffset * scale.X, value.Y - topOffset * scale.Y), new Vector2(value.Width + leftOffset * scale.X + rightOffset * scale.X, value.Height + topOffset * scale.Y + bottomOffset * scale.Y));
             }
         }
+        #endregion
 
         public int TotalTime { get; internal set; }
         public const int ParticleTimingCeiling = 17 * 3;
+
+        const int leftOffset = 10;
+        const int rightOffset = 7;
+        const int topOffset = 10;
+        const int bottomOffset = 7;
 
         const int minWindowWidth = 1;
         const int minWindowHeight = 1;
@@ -361,6 +364,7 @@ namespace WinFormsHalloweenProject
         readonly int maxWindowHeight = Screen.PrimaryScreen.Bounds.Height - 1;
 
 
+        #region PathingVariables
         public HashSet<RECT> CurrentWindows = new HashSet<RECT>();
         public Point[] CurrentPath = { startingPoint, startingPoint, startingPoint };
         int pathIndex = 0;
@@ -382,8 +386,10 @@ namespace WinFormsHalloweenProject
         double lerpPercent = .5;
         //Size speeds;
         //Size shake;
+        #endregion
 
         Graph graph;
+        #region ParticleVariables
         public bool SpawnParticles = true;
         const int particleCount = 8;
         int spawnDelay = 0;
@@ -392,7 +398,7 @@ namespace WinFormsHalloweenProject
         int lastParticleInited = 0;
         int particleIndex = 0;
         bool particlesKnow = false;
-        
+        #endregion
 
 #nullable disable
         public Ghost()
