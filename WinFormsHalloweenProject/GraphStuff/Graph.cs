@@ -9,7 +9,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms.VisualStyles;
 using System.Xml.Linq;
-
+using WinformsHalloweenProject.Extensions;
+using WinformsHalloweenProject.RectangleStuff;
 
 namespace WinFormsHalloweenProject
 {
@@ -24,9 +25,9 @@ namespace WinFormsHalloweenProject
 
     public partial class Graph
     {
-        public double DistanceFunc(Point start, Point end)
+        public static double DistanceFunc(Point start, Point end)
         {
-            return Math.Sqrt((end.X - start.X) * (end.X - start.X) + (end.Y - start.Y) * (end.Y - start.Y));
+            return Math.Sqrt(0 *( (end.X - start.X) * (end.X - start.X) + (end.Y - start.Y) * (end.Y - start.Y)));
         }
 
         private List<Node> Nodes = new List<Node>();
@@ -103,7 +104,6 @@ namespace WinFormsHalloweenProject
                 for (int i = 0; i < sideNodes.Length; i++)
                 {
                     bool doesCurrentNodeExist = false;
-                    #nullable disable
                     if (sideNodes[i] != null)
                     {
                         Nodes.Add(sideNodes[i]);
@@ -131,7 +131,6 @@ namespace WinFormsHalloweenProject
                             }
                         }
                     }
-                    #nullable enable
 
                     previousResult = doesCurrentNodeExist;
                     previousIndex = i;
@@ -143,7 +142,7 @@ namespace WinFormsHalloweenProject
             return startNode;
         }
 
-        public Point[]? GetPath(HashSet<Ghost.RECT> rectangles, Point ghostLocation, out PathStatus result, out Rectangle endGoal, out LinkedList<Rectangle> biggestRectangles)
+        public Point[] GetPath(HashSet<Ghost.RECT> rectangles, Point ghostLocation, out PathStatus result, out Rectangle endGoal, out LinkedList<Rectangle> biggestRectangles)
         {
             Node startNode = SetupNodes(rectangles, ghostLocation);
             RectangleComparer.Instance.Start = new Vector2(startNode.Location.X, startNode.Location.Y);
