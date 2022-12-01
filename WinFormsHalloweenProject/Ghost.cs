@@ -834,22 +834,33 @@ namespace WinFormsHalloweenProject
             {
                 if (window.Intersects(wantedBounds))
                 {
+                    bool hit = false;
+
                     if (window.IntersectsLeft(wantedBounds, Math.Abs(deltaX)))
                     {
+                        hit = true;
                         currentDirection.X = -Math.Abs(currentDirection.X);
                     }
                     else if (window.IntersectsRight(wantedBounds, Math.Abs(deltaX)))
                     {
+                        hit = true;
                         currentDirection.X = Math.Abs(currentDirection.X);
                     }
 
                     if (window.IntersectsTop(wantedBounds, Math.Abs(deltaY)))
                     {
+                        hit = true;
                         currentDirection.Y = -Math.Abs(currentDirection.Y);
                     }
                     else if (window.IntersectsBottom(wantedBounds, Math.Abs(deltaY)))
                     {
+                        hit = true;
                         currentDirection.Y = Math.Abs(currentDirection.Y);
+                    }
+
+                    if (!hit)
+                    {
+                        //trueLocation = lastLerpPoint.Lerp(CurrentPath[pathIndex + 1].ToVector2(), (currentDistance - (targetDistance - distances[pathIndex])) / distances[pathIndex]);
                     }
                 }
             }
