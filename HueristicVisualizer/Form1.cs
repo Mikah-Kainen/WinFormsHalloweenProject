@@ -3,12 +3,12 @@ using Accessibility;
 using System.Net.Http.Headers;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-
+using WinformsHalloweenProject.Extensions;
 using WinFormsHalloweenProject;
 
 namespace Rectangle_Hueristic
 {
-    using static WinFormsHalloweenProject.Pain;
+    using static WinformsHalloweenProject.RectangleStuff.Pain;
 
     //using RECT = Rectangle;
     using RECT = WinFormsHalloweenProject.Ghost.RECT;

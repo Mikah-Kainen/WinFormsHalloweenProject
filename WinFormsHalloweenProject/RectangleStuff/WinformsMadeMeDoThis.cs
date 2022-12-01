@@ -5,8 +5,9 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using WinformsHalloweenProject.Extensions;
 
-namespace WinFormsHalloweenProject
+namespace WinformsHalloweenProject.RectangleStuff
 {
     using RECT = Rectangle;
     using static Pain;
@@ -22,7 +23,7 @@ namespace WinFormsHalloweenProject
         public Vector2 Start { get; set; }
 
         Vector2 aspectRatio = Vector2.One;
-        public Vector2 AspectRatio { get => aspectRatio; set => aspectRatio = value  / Math.Max(value.X, value.Y); }
+        public Vector2 AspectRatio { get => aspectRatio; set => aspectRatio = value / Math.Max(value.X, value.Y); }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int Compare(RECT x, RECT y)
@@ -136,6 +137,6 @@ namespace WinFormsHalloweenProject
             }
             rects.AddLast(newRect);
             return true;
-        }     
+        }
     }
 }
